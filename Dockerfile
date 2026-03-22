@@ -63,9 +63,13 @@ COPY --from=builder /app/lib/streaming.ts ./lib/streaming.ts
 # Copy node_modules for runtime dependencies
 COPY --from=builder /app/node_modules ./node_modules
 
+# Copy startup script
+COPY --from=builder /app/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
 # Create directory for SQLite database and uploads
 RUN mkdir -p /app/data /app/public/uploads/screenshots
-RUN chown -R nextjs:nodejs /app/data /app/public/uploads
+RUN chown -R nextjs:nodejs /app/data /app/public/uploads /app/start.sh /app/prisma
 
 # Set permissions
 USER nextjs
@@ -77,5 +81,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
-# Start command - use custom server for Socket.IO support
-CMD ["node", "server.js"]
+# Start command - run migrations, seed, then start server
+CMD ["./start.sh"]

@@ -6,6 +6,44 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting database seed...");
 
+  // Create XenonLabs Admin User
+  const xenonAdminPassword = await bcrypt.hash("Xenon$1234", 10);
+  const xenonAdmin = await prisma.user.upsert({
+    where: { email: "support@xenonlabs.ai" },
+    update: { password: xenonAdminPassword },
+    create: {
+      email: "support@xenonlabs.ai",
+      password: xenonAdminPassword,
+      firstName: "Support",
+      lastName: "Admin",
+      role: "ADMIN",
+      status: "ACTIVE",
+      department: "Administration",
+      jobTitle: "System Administrator",
+      skills: JSON.stringify(["Administration", "Support", "Management"]),
+    },
+  });
+  console.log("✅ Created XenonLabs admin:", xenonAdmin.email);
+
+  // Create XenonLabs Employee User
+  const xenonEmployeePassword = await bcrypt.hash("Xenon$1234", 10);
+  const xenonEmployee = await prisma.user.upsert({
+    where: { email: "abhisek.sinha@xenonlabs.ai" },
+    update: { password: xenonEmployeePassword },
+    create: {
+      email: "abhisek.sinha@xenonlabs.ai",
+      password: xenonEmployeePassword,
+      firstName: "Abhisek",
+      lastName: "Sinha",
+      role: "MEMBER",
+      status: "ACTIVE",
+      department: "Engineering",
+      jobTitle: "Software Engineer",
+      skills: JSON.stringify(["JavaScript", "React", "Node.js", "TypeScript"]),
+    },
+  });
+  console.log("✅ Created XenonLabs employee:", xenonEmployee.email);
+
   // Create Admin User
   const adminPassword = await bcrypt.hash("admin123", 10);
   const admin = await prisma.user.upsert({
@@ -305,6 +343,8 @@ async function main() {
 
   console.log("\n🎉 Database seeding completed!");
   console.log("\n📝 Login Credentials:");
+  console.log("   XenonLabs Admin: support@xenonlabs.ai / Xenon$1234");
+  console.log("   XenonLabs Employee: abhisek.sinha@xenonlabs.ai / Xenon$1234");
   console.log("   Admin: admin@xetask.com / admin123");
   console.log("   Manager: manager@xetask.com / manager123");
   console.log("   Member: alex.johnson@xetask.com / member123");
