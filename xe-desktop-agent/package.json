@@ -1,0 +1,66 @@
+{
+  "name": "xe-desktop-agent",
+  "version": "1.0.0",
+  "description": "XeTask Desktop Monitoring Agent",
+  "main": "dist/main/index.js",
+  "author": "XeTask",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron .",
+    "preview": "electron-vite preview",
+    "package": "electron-builder",
+    "package:win": "electron-builder --win",
+    "package:mac": "electron-builder --mac",
+    "package:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "active-win": "^8.1.0",
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.7.0",
+    "socket.io-client": "^4.8.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^9.0.7",
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1",
+    "electron-vite": "^2.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "build": {
+    "appId": "com.xetask.desktop-agent",
+    "productName": "XeTask Agent",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "assets/**/*"
+    ],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "icon": "assets/icons/icon.icns",
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": ["nsis", "zip"],
+      "icon": "assets/icons/icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage", "deb"],
+      "icon": "assets/icons",
+      "category": "Utility"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icons/icon.ico"
+    }
+  }
+}

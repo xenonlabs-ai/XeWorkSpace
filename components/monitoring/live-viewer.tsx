@@ -1,0 +1,316 @@
+"use client";
+
+import { useEffect, useState, useRef } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { LiveIndicator } from "./live-indicator";
+import {
+  X,
+  Maximize,
+  Minimize,
+  Camera,
+  Volume2,
+  VolumeX,
+  Signal,
+  SignalLow,
+  SignalZero,
+  Monitor,
+  Clock,
+  Download,
+} from "lucide-react";
+import { formatDistanceToNow, format } from "date-fns";
+import { io, Socket } from "socket.io-client";
+import { cn } from "@/lib/utils";
+
+interface StreamSession {
+  sessionId: string;
+  userId: string;
+  deviceName: string;
+  userName: string;
+  status: "STREAMING" | "PAUSED" | "OFFLINE";
+  lastFrame: string | null;
+  lastUpdate: number;
+  fps: number;
+  viewers: number;
+  avatar?: string;
+}
+
+interface LiveViewerProps {
+  session: StreamSession | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function LiveViewer({ session, isOpen, onClose }: LiveViewerProps) {
+  const [frame, setFrame] = useState<string | null>(null);
+  const [lastUpdate, setLastUpdate] = useState<number>(0);
+  const [fps, setFps] = useState<number>(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("connecting");
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const frameCountRef = useRef(0);
+  const lastFpsUpdate = useRef(Date.now());
+
+  // Initialize socket and subscribe to session
+  useEffect(() => {
+    if (!isOpen || !session) return;
+
+    const newSocket = io({
+      path: "/api/socket",
+      transports: ["websocket", "polling"],
+    });
+
+    newSocket.on("connect", () => {
+      setConnectionStatus("connected");
+      newSocket.emit("viewer:subscribe", { sessionId: session.sessionId });
+    });
+
+    newSocket.on("frame", (data: { sessionId: string; frame: string; timestamp: number }) => {
+      if (data.sessionId === session.sessionId) {
+        setFrame(data.frame);
+        setLastUpdate(data.timestamp);
+
+        // Calculate FPS
+        frameCountRef.current++;
+        const now = Date.now();
+        if (now - lastFpsUpdate.current >= 1000) {
+          setFps(frameCountRef.current);
+          frameCountRef.current = 0;
+          lastFpsUpdate.current = now;
+        }
+      }
+    });
+
+    newSocket.on("stream:ended", (data: { sessionId: string }) => {
+      if (data.sessionId === session.sessionId) {
+        setConnectionStatus("disconnected");
+      }
+    });
+
+    newSocket.on("disconnect", () => {
+      setConnectionStatus("disconnected");
+    });
+
+    setSocket(newSocket);
+
+    // Set initial frame if available
+    if (session.lastFrame) {
+      setFrame(session.lastFrame);
+      setLastUpdate(session.lastUpdate);
+    }
+
+    return () => {
+      newSocket.emit("viewer:unsubscribe");
+      newSocket.disconnect();
+      setSocket(null);
+      setFrame(null);
+      setConnectionStatus("connecting");
+      frameCountRef.current = 0;
+    };
+  }, [isOpen, session?.sessionId]);
+
+  // HTTP fallback polling
+  useEffect(() => {
+    if (!isOpen || !session) return;
+
+    const fetchFrame = async () => {
+      try {
+        const response = await fetch(`/api/monitoring/stream?sessionId=${session.sessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.frame) {
+            setFrame(data.frame.frame);
+            setLastUpdate(data.frame.timestamp);
+            setConnectionStatus("connected");
+          }
+        }
+      } catch (error) {
+        // Silently fail, socket will handle it
+      }
+    };
+
+    const interval = setInterval(fetchFrame, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen, session?.sessionId]);
+
+  // Fullscreen handling
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
+
+  // Download current frame
+  const downloadFrame = () => {
+    if (!frame || !session) return;
+
+    const link = document.createElement("a");
+    link.href = `data:image/png;base64,${frame}`;
+    link.download = `screenshot-${session.userName.replace(/\s/g, "-")}-${format(new Date(), "yyyy-MM-dd-HH-mm-ss")}.png`;
+    link.click();
+  };
+
+  if (!session) return null;
+
+  const initials = session.userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+
+  const isLive = connectionStatus === "connected" && frame && Date.now() - lastUpdate < 10000;
+  const isStale = frame && Date.now() - lastUpdate > 5000;
+
+  const getSignalIcon = () => {
+    if (connectionStatus === "disconnected") return <SignalZero className="h-4 w-4 text-red-500" />;
+    if (isStale) return <SignalLow className="h-4 w-4 text-amber-500" />;
+    return <Signal className="h-4 w-4 text-green-500" />;
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent
+        ref={containerRef}
+        className={cn(
+          "max-w-6xl p-0 gap-0 bg-black overflow-hidden",
+          isFullscreen && "max-w-none w-screen h-screen rounded-none"
+        )}
+      >
+        <DialogTitle className="sr-only">Live Stream - {session.userName}</DialogTitle>
+
+        {/* Top Bar */}
+        <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 border-2 border-white/20">
+              <AvatarImage src={session.avatar} />
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-white font-semibold">{session.userName}</span>
+                {isLive && (
+                  <Badge className="bg-red-600 text-white border-0 gap-1">
+                    <LiveIndicator size="sm" className="[&>span]:bg-white" />
+                    LIVE
+                  </Badge>
+                )}
+                {!isLive && frame && (
+                  <Badge variant="outline" className="border-amber-500 text-amber-500">
+                    DELAYED
+                  </Badge>
+                )}
+                {connectionStatus === "disconnected" && (
+                  <Badge variant="outline" className="border-red-500 text-red-500">
+                    OFFLINE
+                  </Badge>
+                )}
+              </div>
+              <div className="flex items-center gap-2 text-white/60 text-sm">
+                <Monitor className="h-3 w-3" />
+                <span>{session.deviceName}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={downloadFrame}
+              disabled={!frame}
+            >
+              <Download className="h-5 w-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={toggleFullscreen}
+            >
+              {isFullscreen ? (
+                <Minimize className="h-5 w-5" />
+              ) : (
+                <Maximize className="h-5 w-5" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-white hover:bg-white/20"
+              onClick={onClose}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Video Area */}
+        <div className="relative flex items-center justify-center min-h-[60vh] bg-black">
+          {frame ? (
+            <img
+              src={`data:image/png;base64,${frame}`}
+              alt={`${session.userName}'s screen`}
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center text-white/50">
+              <Monitor className="h-24 w-24 mb-4" />
+              <p className="text-lg">
+                {connectionStatus === "connecting"
+                  ? "Connecting to stream..."
+                  : "No video feed available"}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom Status Bar */}
+        <div className="absolute bottom-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="flex items-center gap-4 text-white/80 text-sm">
+            <div className="flex items-center gap-1.5">
+              {getSignalIcon()}
+              <span>{connectionStatus}</span>
+            </div>
+            {fps > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Camera className="h-4 w-4" />
+                <span>{fps} fps</span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4 text-white/80 text-sm">
+            {lastUpdate > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                <span>
+                  {formatDistanceToNow(new Date(lastUpdate), { addSuffix: true })}
+                </span>
+              </div>
+            )}
+            <span>{format(new Date(), "HH:mm:ss")}</span>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

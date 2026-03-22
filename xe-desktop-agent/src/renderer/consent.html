@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XeTask - Monitoring Consent</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      max-width: 600px;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+
+    .content {
+      padding: 30px;
+    }
+
+    .alert {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .alert-title {
+      color: #92400e;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-text {
+      color: #78350f;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .section {
+      margin-bottom: 24px;
+    }
+
+    .section h3 {
+      color: #374151;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    .section ul {
+      list-style: none;
+    }
+
+    .section li {
+      padding: 10px 0;
+      border-bottom: 1px solid #f3f4f6;
+      font-size: 14px;
+      color: #4b5563;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .section li:last-child {
+      border-bottom: none;
+    }
+
+    .section li svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      color: #6366f1;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+
+    .checkbox-container input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-top: 2px;
+      cursor: pointer;
+    }
+
+    .checkbox-container label {
+      font-size: 14px;
+      color: #374151;
+      cursor: pointer;
+      line-height: 1.5;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #f9fafb;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .loading.visible {
+      display: block;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      display: none;
+      background: #fee2e2;
+      border: 1px solid #ef4444;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+      color: #991b1b;
+      font-size: 14px;
+    }
+
+    .error-message.visible {
+      display: block;
+    }
+
+    .success-message {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .success-message.visible {
+      display: block;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: #10b981;
+      border-radius: 50%;
+      margin: 0 auto 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+
+    .version {
+      text-align: center;
+      font-size: 12px;
+      color: #9ca3af;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+      </div>
+      <h1>Monitoring Consent Required</h1>
+      <p>Your organization has enabled desktop monitoring</p>
+    </div>
+
+    <div class="content" id="consent-form">
+      <div class="alert">
+        <div class="alert-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          Important Notice
+        </div>
+        <div class="alert-text">
+          By accepting, you acknowledge that your desktop activity will be monitored during work hours.
+          This is required by your organization's IT policy.
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>What will be monitored:</h3>
+        <ul>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12z"/>
+            </svg>
+            <span><strong>Screenshots:</strong> Periodic screenshots of your desktop (every 1-5 minutes)</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/>
+            </svg>
+            <span><strong>Applications:</strong> Names of applications and windows you use</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+            </svg>
+            <span><strong>Activity Time:</strong> Time spent on applications and idle periods</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/>
+            </svg>
+            <span><strong>Live Streaming:</strong> Real-time screen sharing (only when activated by admin)</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>Your privacy rights:</h3>
+        <ul>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span>You can request access to your monitored data</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span>Personal activities outside work hours are not monitored</span>
+          </li>
+          <li>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span>You can revoke consent at any time (with manager approval)</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="error-message" id="error-message"></div>
+
+      <div class="checkbox-container">
+        <input type="checkbox" id="consent-checkbox">
+        <label for="consent-checkbox">
+          I have read and understand the monitoring policy. I consent to have my desktop activity monitored
+          during work hours in accordance with my organization's IT policy.
+        </label>
+      </div>
+
+      <div class="buttons">
+        <button class="btn-secondary" onclick="handleDecline()">Decline</button>
+        <button class="btn-primary" id="accept-btn" disabled onclick="handleAccept()">Accept & Continue</button>
+      </div>
+
+      <div class="version">Consent Version 1.0</div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Submitting consent...</p>
+    </div>
+
+    <div class="success-message" id="success">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24">
+          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+        </svg>
+      </div>
+      <h2 style="margin-bottom: 8px; color: #10b981;">Consent Accepted</h2>
+      <p style="color: #6b7280;">Monitoring will begin shortly. You can close this window.</p>
+    </div>
+  </div>
+
+  <script>
+    const checkbox = document.getElementById('consent-checkbox');
+    const acceptBtn = document.getElementById('accept-btn');
+    const consentForm = document.getElementById('consent-form');
+    const loading = document.getElementById('loading');
+    const success = document.getElementById('success');
+    const errorMessage = document.getElementById('error-message');
+
+    checkbox.addEventListener('change', () => {
+      acceptBtn.disabled = !checkbox.checked;
+    });
+
+    async function handleAccept() {
+      consentForm.style.display = 'none';
+      loading.classList.add('visible');
+      errorMessage.classList.remove('visible');
+
+      try {
+        const result = await window.electronAPI.submitConsent();
+
+        if (result.success) {
+          loading.classList.remove('visible');
+          success.classList.add('visible');
+
+          // Close window after 2 seconds
+          setTimeout(() => {
+            window.electronAPI.consentComplete(true);
+          }, 2000);
+        } else {
+          throw new Error(result.error || 'Failed to submit consent');
+        }
+      } catch (error) {
+        loading.classList.remove('visible');
+        consentForm.style.display = 'block';
+        errorMessage.textContent = error.message;
+        errorMessage.classList.add('visible');
+      }
+    }
+
+    function handleDecline() {
+      if (confirm('Are you sure you want to decline? Monitoring cannot start without your consent, and this may be required by your organization.')) {
+        window.electronAPI.consentComplete(false);
+      }
+    }
+  </script>
+</body>
+</html>

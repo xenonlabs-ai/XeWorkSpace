@@ -1,0 +1,131 @@
+name: Deploy to AWS Lightsail
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-southeast-2  # Sydney region
+  SERVICE_NAME: xeworkspace
+  CONTAINER_NAME: xeworkspace-app
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install AWS Lightsail CLI plugin
+        run: |
+          curl "https://s3.us-west-2.amazonaws.com/lightsailctl/latest/linux-amd64/lightsailctl" -o "/usr/local/bin/lightsailctl"
+          sudo chmod +x /usr/local/bin/lightsailctl
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.SERVICE_NAME }}:latest .
+
+      - name: Push image to Lightsail
+        run: |
+          aws lightsail push-container-image \
+            --region ${{ env.AWS_REGION }} \
+            --service-name ${{ env.SERVICE_NAME }} \
+            --label ${{ env.CONTAINER_NAME }} \
+            --image ${{ env.SERVICE_NAME }}:latest
+
+      - name: Get pushed image name
+        id: image
+        run: |
+          IMAGE=$(aws lightsail get-container-images \
+            --region ${{ env.AWS_REGION }} \
+            --service-name ${{ env.SERVICE_NAME }} \
+            --query "containerImages[0].image" \
+            --output text)
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Create containers.json
+        run: |
+          cat > containers.json << EOF
+          {
+            "${{ env.CONTAINER_NAME }}": {
+              "image": "${{ steps.image.outputs.image }}",
+              "environment": {
+                "NODE_ENV": "production",
+                "DATABASE_URL": "file:/app/data/xetask.db",
+                "NEXTAUTH_URL": "${{ secrets.NEXTAUTH_URL }}",
+                "NEXTAUTH_SECRET": "${{ secrets.NEXTAUTH_SECRET }}"
+              },
+              "ports": {
+                "3000": "HTTP"
+              }
+            }
+          }
+          EOF
+
+      - name: Create public-endpoint.json
+        run: |
+          cat > public-endpoint.json << EOF
+          {
+            "containerName": "${{ env.CONTAINER_NAME }}",
+            "containerPort": 3000,
+            "healthCheck": {
+              "healthyThreshold": 2,
+              "unhealthyThreshold": 2,
+              "timeoutSeconds": 5,
+              "intervalSeconds": 30,
+              "path": "/api/health",
+              "successCodes": "200"
+            }
+          }
+          EOF
+
+      - name: Deploy to Lightsail Container Service
+        run: |
+          aws lightsail create-container-service-deployment \
+            --region ${{ env.AWS_REGION }} \
+            --service-name ${{ env.SERVICE_NAME }} \
+            --containers file://containers.json \
+            --public-endpoint file://public-endpoint.json
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting for deployment to complete..."
+          for i in {1..30}; do
+            STATUS=$(aws lightsail get-container-services \
+              --region ${{ env.AWS_REGION }} \
+              --service-name ${{ env.SERVICE_NAME }} \
+              --query "containerServices[0].state" \
+              --output text)
+            echo "Current status: $STATUS"
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "Deployment successful!"
+              break
+            elif [ "$STATUS" = "DEPLOYING" ]; then
+              echo "Still deploying... waiting 30 seconds"
+              sleep 30
+            else
+              echo "Unexpected status: $STATUS"
+              exit 1
+            fi
+          done
+
+      - name: Get service URL
+        run: |
+          URL=$(aws lightsail get-container-services \
+            --region ${{ env.AWS_REGION }} \
+            --service-name ${{ env.SERVICE_NAME }} \
+            --query "containerServices[0].url" \
+            --output text)
+          echo "🚀 Application deployed to: $URL"

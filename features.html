@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="XeTask - A comprehensive task management dashboard with team collaboration, performance tracking, and advanced project management features.">
+    <title>XeTask - Features & Description</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveBackground 20s linear infinite;
+        }
+
+        @keyframes moveBackground {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .content {
+            padding: 3rem 2rem;
+        }
+
+        .section {
+            margin-bottom: 4rem;
+        }
+
+        .section h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 1.5rem;
+            position: relative;
+            padding-bottom: 1rem;
+        }
+
+        .section h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .description {
+            font-size: 1.125rem;
+            color: #4a5568;
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+            border-color: #667eea;
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.75rem;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card p {
+            color: #718096;
+            line-height: 1.7;
+        }
+
+        .tech-stack {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .tech-stack h3 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .tech-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .tech-badge {
+            background: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .tech-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .highlights {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .highlights h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .highlights ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .highlights li {
+            padding: 0.75rem 0;
+            padding-left: 2rem;
+            position: relative;
+            font-size: 1.125rem;
+        }
+
+        .highlights li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+
+        .footer {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: #764ba2;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .header p {
+                font-size: 1rem;
+            }
+
+            .section h2 {
+                font-size: 2rem;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .content {
+                padding: 2rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>XeTask</h1>
+            <p>A comprehensive task management dashboard designed to streamline team collaboration, boost productivity, and deliver exceptional project outcomes.</p>
+        </header>
+
+        <main class="content">
+            <!-- Introduction Section -->
+            <section class="section">
+                <h2>What is XeTask?</h2>
+                <p class="description">
+                    XeTask is a powerful, modern task management dashboard built with cutting-edge technologies to help teams collaborate effectively, 
+                    track progress, and achieve their goals. With an intuitive interface and comprehensive feature set, XeTask transforms the way 
+                    teams work together, providing real-time insights, seamless communication, and robust project management capabilities.
+                </p>
+                <p class="description">
+                    Whether you're managing a small team or coordinating complex projects across multiple departments, XeTask provides the tools 
+                    and insights you need to stay organized, meet deadlines, and deliver exceptional results.
+                </p>
+            </section>
+
+            <!-- Key Features Section -->
+            <section class="section">
+                <h2>Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🏠</div>
+                        <h3>Interactive Dashboard</h3>
+                        <p>Get a comprehensive overview of your team's activities with real-time statistics, project analytics, task completion rates, and team performance metrics. Visualize trends and make data-driven decisions.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">👥</div>
+                        <h3>Team Member Management</h3>
+                        <p>Efficiently manage your team members, track their roles, monitor performance, and assign responsibilities. View detailed profiles and activity histories for each team member.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">✅</div>
+                        <h3>Advanced Task Management</h3>
+                        <p>Create, assign, and track tasks with ease. Features include priority levels, categories, deadlines, task distribution analytics, and calendar views for better planning and execution.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📅</div>
+                        <h3>Smart Calendar</h3>
+                        <p>Visualize your schedule with an interactive calendar that displays tasks, deadlines, meetings, and milestones. Plan ahead and never miss important dates with integrated reminders.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Performance Analytics</h3>
+                        <p>Track individual and team performance with detailed analytics, charts, and reports. Monitor productivity trends, identify bottlenecks, and optimize workflows for maximum efficiency.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">💬</div>
+                        <h3>Real-time Messaging</h3>
+                        <p>Communicate seamlessly with your team through integrated messaging. Create conversations, share updates, and collaborate in real-time without switching between applications.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🕐</div>
+                        <h3>Attendance Tracking</h3>
+                        <p>Monitor team attendance with an intuitive tracking system. View attendance records, generate reports, and manage time-off requests all in one place.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">📄</div>
+                        <h3>Comprehensive Reports</h3>
+                        <p>Generate detailed reports on projects, tasks, team performance, and resource utilization. Export data for presentations and stakeholder updates.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🛡️</div>
+                        <h3>Roles & Permissions</h3>
+                        <p>Implement granular access control with customizable roles and permissions. Ensure data security and maintain proper authorization levels across your organization.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">⚙️</div>
+                        <h3>Flexible Settings</h3>
+                        <p>Customize XeTask to match your workflow with extensive configuration options. Manage organization settings, user preferences, and system configurations.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Theme Customization</h3>
+                        <p>Personalize your experience with light and dark themes. Adjust colors, fonts, and visual elements to match your brand or personal preferences.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>RTL Support</h3>
+                        <p>Full support for right-to-left languages, making XeTask accessible to teams worldwide. Switch seamlessly between LTR and RTL layouts.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Technology Stack Section -->
+            <section class="section">
+                <h2>Technology Stack</h2>
+                <div class="tech-stack">
+                    <h3>Built with Modern Technologies</h3>
+                    <div class="tech-list">
+                        <span class="tech-badge">Next.js 16</span>
+                        <span class="tech-badge">React 19</span>
+                        <span class="tech-badge">TypeScript 5</span>
+                        <span class="tech-badge">Tailwind CSS 4</span>
+                        <span class="tech-badge">Radix UI</span>
+                        <span class="tech-badge">Framer Motion</span>
+                        <span class="tech-badge">Recharts</span>
+                        <span class="tech-badge">React Hook Form</span>
+                        <span class="tech-badge">Zod Validation</span>
+                        <span class="tech-badge">date-fns</span>
+                        <span class="tech-badge">Lucide Icons</span>
+                        <span class="tech-badge">next-themes</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Highlights Section -->
+            <section class="section">
+                <div class="highlights">
+                    <h3>Why Choose XeTask?</h3>
+                    <ul>
+                        <li>Modern, intuitive user interface designed for productivity</li>
+                        <li>Real-time collaboration and communication tools</li>
+                        <li>Comprehensive analytics and reporting capabilities</li>
+                        <li>Fully responsive design for desktop, tablet, and mobile</li>
+                        <li>Advanced security with role-based access control</li>
+                        <li>Customizable themes and branding options</li>
+                        <li>Seamless integration with existing workflows</li>
+                        <li>Regular updates and feature enhancements</li>
+                        <li>Built with performance and scalability in mind</li>
+                        <li>Extensive documentation and support resources</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Additional Features Section -->
+            <section class="section">
+                <h2>Additional Capabilities</h2>
+                <div class="description">
+                    <p><strong>Project Timeline Visualization:</strong> Track project milestones and deadlines with interactive timeline views that help you stay on schedule.</p>
+                    
+                    <p><strong>Team Workload Management:</strong> Balance workload across team members with visual indicators and analytics that prevent burnout and optimize resource allocation.</p>
+                    
+                    <p><strong>Goal Tracking:</strong> Set and monitor team and individual goals with progress indicators and achievement milestones.</p>
+                    
+                    <p><strong>Mini Calendar Widget:</strong> Quick-access calendar widget on the dashboard for at-a-glance schedule overview.</p>
+                    
+                    <p><strong>Activity Monitoring:</strong> Keep track of all team activities, updates, and changes in real-time with comprehensive activity logs.</p>
+                    
+                    <p><strong>Resource Utilization:</strong> Monitor and optimize resource allocation with detailed utilization reports and analytics.</p>
+                    
+                    <p><strong>Trend Analysis:</strong> Identify patterns and trends in team performance, task completion, and project progress over time.</p>
+                    
+                    <p><strong>Quick Actions:</strong> Access frequently used features quickly with customizable quick action shortcuts.</p>
+                </div>
+            </section>
+
+            <!-- Use Cases Section -->
+            <section class="section">
+                <h2>Perfect For</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🏢</div>
+                        <h3>Enterprise Teams</h3>
+                        <p>Large organizations managing multiple projects and departments with complex workflows and reporting requirements.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🚀</div>
+                        <h3>Startups</h3>
+                        <p>Fast-moving teams that need agile project management tools to scale quickly and efficiently.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>Project Managers</h3>
+                        <p>Professionals who need comprehensive tools to plan, execute, and monitor projects from start to finish.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">👨‍💼</div>
+                        <h3>Team Leaders</h3>
+                        <p>Managers who want to track team performance, assign tasks, and ensure timely project delivery.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🌍</div>
+                        <h3>Remote Teams</h3>
+                        <p>Distributed teams that need centralized communication and collaboration tools to work effectively across time zones.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon">🎓</div>
+                        <h3>Educational Institutions</h3>
+                        <p>Schools and universities managing student projects, faculty collaboration, and administrative tasks.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 XeTask. All rights reserved. | Built with ❤️ using Next.js and React</p>
+            <p style="margin-top: 0.5rem;">For more information, visit the <a href="/docs">documentation</a></p>
+        </footer>
+    </div>
+</body>
+</html>

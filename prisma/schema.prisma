@@ -1,0 +1,401 @@
+// Prisma Schema for Taskify
+// Database: SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTHENTICATION ====================
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  firstName     String
+  lastName      String
+  avatar        String?
+  phone         String?
+  location      String?
+  role          String    @default("MEMBER") // ADMIN, MANAGER, MEMBER, VIEWER
+  status        String    @default("ACTIVE") // ACTIVE, AWAY, OFFLINE, ON_LEAVE
+  department    String?
+  jobTitle      String?
+  skills        String?   // JSON string array
+  joinedAt      DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth fields
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+
+  // Relations
+  assignedTasks         Task[]              @relation("AssignedTasks")
+  createdTasks          Task[]              @relation("CreatedTasks")
+  attendance            Attendance[]
+  performanceReviews    PerformanceReview[] @relation("ReviewedEmployee")
+  conductedReviews      PerformanceReview[] @relation("Reviewer")
+  goals                 Goal[]
+  sentMessages          Message[]           @relation("SentMessages")
+  receivedMessages      Message[]           @relation("ReceivedMessages")
+  desktopSessions       DesktopSession[]
+  notifications         Notification[]
+  teamMemberships       TeamMember[]
+  taskComments          TaskComment[]
+  agentTokens           AgentToken[]
+  monitoringConsent     MonitoringConsent?
+}
+
+// NextAuth Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ==================== TEAMS ====================
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members  TeamMember[]
+  projects Project[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  userId   String
+  teamId   String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+// ==================== PROJECTS ====================
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("PLANNING") // PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  startDate   DateTime?
+  endDate     DateTime?
+  progress    Int      @default(0)
+  teamId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  team  Team?  @relation(fields: [teamId], references: [id])
+  tasks Task[]
+}
+
+// ==================== TASKS ====================
+
+model Task {
+  id             String    @id @default(cuid())
+  title          String
+  description    String?
+  status         String    @default("TODO") // TODO, IN_PROGRESS, IN_REVIEW, COMPLETED, CANCELLED
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  category       String?
+  dueDate        DateTime?
+  completedAt    DateTime?
+  estimatedHours Float?
+  actualHours    Float?
+  projectId      String?
+  assigneeId     String?
+  creatorId      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project  Project?      @relation(fields: [projectId], references: [id])
+  assignee User?         @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  creator  User          @relation("CreatedTasks", fields: [creatorId], references: [id])
+  comments TaskComment[]
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  content   String
+  taskId    String
+  authorId  String
+  createdAt DateTime @default(now())
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id])
+}
+
+// ==================== ATTENDANCE ====================
+
+model Attendance {
+  id          String    @id @default(cuid())
+  userId      String
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      String    @default("PRESENT") // PRESENT, ABSENT, LATE, HALF_DAY, ON_LEAVE
+  workType    String    @default("OFFICE") // OFFICE, REMOTE, HYBRID
+  hoursWorked Float?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+// ==================== PERFORMANCE REVIEW ====================
+
+model PerformanceReview {
+  id           String   @id @default(cuid())
+  employeeId   String
+  reviewerId   String
+  reviewPeriod String // e.g., "Q1 2026", "Annual 2025"
+  reviewType   String   @default("QUARTERLY") // MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL, PROBATION, PROJECT_BASED
+  status       String   @default("DRAFT") // DRAFT, SELF_ASSESSMENT_PENDING, MANAGER_REVIEW_PENDING, COMPLETED, ACKNOWLEDGED
+
+  // Ratings (1-5 scale)
+  productivityRating    Int?
+  qualityRating         Int?
+  communicationRating   Int?
+  teamworkRating        Int?
+  initiativeRating      Int?
+  punctualityRating     Int?
+  technicalSkillsRating Int?
+  overallRating         Float?
+
+  // Feedback
+  strengths              String?
+  areasForImprovement    String?
+  managerComments        String?
+  employeeSelfAssessment String?
+  goalsForNextPeriod     String?
+
+  // Timestamps
+  scheduledDate  DateTime?
+  submittedAt    DateTime?
+  acknowledgedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  employee  User                  @relation("ReviewedEmployee", fields: [employeeId], references: [id])
+  reviewer  User                  @relation("Reviewer", fields: [reviewerId], references: [id])
+  goals     Goal[]
+  feedbacks PerformanceFeedback[]
+}
+
+model PerformanceFeedback {
+  id           String   @id @default(cuid())
+  reviewId     String
+  providerId   String // Who gave the feedback
+  relationship String // "peer", "manager", "direct_report"
+  rating       Int?
+  comments     String?
+  anonymous    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  review PerformanceReview @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model Goal {
+  id          String    @id @default(cuid())
+  userId      String
+  reviewId    String?
+  title       String
+  description String?
+  targetDate  DateTime?
+  progress    Int       @default(0)
+  status      String    @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, CANCELLED
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user   User               @relation(fields: [userId], references: [id])
+  review PerformanceReview? @relation(fields: [reviewId], references: [id])
+}
+
+// ==================== MESSAGES ====================
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
+  receiverId String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+// ==================== DESKTOP MONITORING ====================
+
+model DesktopSession {
+  id         String    @id @default(cuid())
+  userId     String
+  deviceName String
+  deviceId   String    @unique
+  ipAddress  String?
+  status     String    @default("OFFLINE") // ONLINE, OFFLINE, IDLE, STREAMING
+  lastActive DateTime  @default(now())
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+
+  user         User          @relation(fields: [userId], references: [id])
+  screenshots  Screenshot[]
+  activityLogs ActivityLog[]
+}
+
+model Screenshot {
+  id           String   @id @default(cuid())
+  sessionId    String
+  imageUrl     String
+  thumbnailUrl String?
+  capturedAt   DateTime @default(now())
+
+  session DesktopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id           String   @id @default(cuid())
+  sessionId    String
+  activityType String // "app_switch", "idle_start", "idle_end", etc.
+  appName      String?
+  windowTitle  String?
+  duration     Int? // in seconds
+  createdAt    DateTime @default(now())
+
+  session DesktopSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+model AgentToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  deviceId  String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MonitoringConsent {
+  id                  String    @id @default(cuid())
+  userId              String    @unique
+
+  // Admin side
+  adminEnabled        Boolean   @default(false)    // Admin has enabled monitoring for this user
+  adminEnabledBy      String?                      // Admin who enabled it
+  adminEnabledAt      DateTime?
+
+  // Employee side
+  employeeConsented   Boolean   @default(false)    // Employee has accepted terms
+  employeeConsentedAt DateTime?
+  employeeConsentIp   String?                      // IP address when consent was given
+  employeeDeviceId    String?                      // Device ID when consent was given
+
+  // Consent details
+  consentVersion      String    @default("1.0")    // Version of terms accepted
+
+  // Revocation
+  revokedAt           DateTime?
+  revokedBy           String?                      // "ADMIN" or "EMPLOYEE"
+  revocationReason    String?
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String // "task", "review", "message", "system"
+  read      Boolean  @default(false)
+  actionUrl String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==================== CALENDAR EVENTS ====================
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  allDay      Boolean  @default(false)
+  location    String?
+  type        String // "meeting", "deadline", "reminder", etc.
+  creatorId   String
+  attendees   String? // JSON array of user IDs
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==================== REPORTS ====================
+
+model Report {
+  id         String    @id @default(cuid())
+  name       String
+  type       String // "performance", "attendance", "tasks", "custom"
+  parameters String? // JSON object for filter parameters
+  schedule   String? // Cron expression for scheduled reports
+  lastRunAt  DateTime?
+  creatorId  String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}

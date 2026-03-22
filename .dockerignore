@@ -1,0 +1,53 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build outputs
+.next
+out
+dist
+build
+
+# Development
+*.log
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+docs
+
+# Desktop agent (built separately)
+xe-desktop-agent
+
+# Scripts (not needed in container)
+scripts
+
+# Database (will be created in container)
+prisma/*.db
+prisma/*.db-journal
+
+# Uploads (will be mounted as volume)
+public/uploads
+
+# GitHub
+.github

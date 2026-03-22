@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XeTask Agent Settings</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #1e293b;
+      color: #ffffff;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .form-group input::placeholder {
+      color: #64748b;
+    }
+
+    .button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .button-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .button-primary:hover {
+      background: #2563eb;
+    }
+
+    .button-secondary {
+      background: transparent;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      margin-top: 12px;
+    }
+
+    .button-secondary:hover {
+      background: #1e293b;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #064e3b;
+      color: #34d399;
+    }
+
+    .status.error {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    .settings-section {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .settings-section h3 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      color: #e2e8f0;
+    }
+
+    .range-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .range-group input[type="range"] {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: #334155;
+      appearance: none;
+    }
+
+    .range-group input[type="range"]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #3b82f6;
+      cursor: pointer;
+    }
+
+    .range-value {
+      min-width: 50px;
+      text-align: right;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>XeTask Agent</h1>
+      <p>Desktop Monitoring Configuration</p>
+    </div>
+
+    <div id="status" class="status hidden"></div>
+
+    <form id="settingsForm">
+      <div class="settings-section">
+        <h3>Server Connection</h3>
+
+        <div class="form-group">
+          <label for="serverUrl">Server URL</label>
+          <input
+            type="url"
+            id="serverUrl"
+            placeholder="http://localhost:3000"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            placeholder="your.email@company.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="agentKey">Agent Key</label>
+          <input
+            type="password"
+            id="agentKey"
+            placeholder="Enter your agent key"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Capture Settings</h3>
+
+        <div class="form-group">
+          <label>Screenshot Interval</label>
+          <div class="range-group">
+            <input
+              type="range"
+              id="captureInterval"
+              min="1"
+              max="10"
+              value="2"
+            />
+            <span class="range-value" id="captureIntervalValue">2 min</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Idle Threshold</label>
+          <div class="range-group">
+            <input
+              type="range"
+              id="idleThreshold"
+              min="1"
+              max="15"
+              value="5"
+            />
+            <span class="range-value" id="idleThresholdValue">5 min</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="button button-primary">
+        Save & Connect
+      </button>
+
+      <button type="button" class="button button-secondary" id="testBtn">
+        Test Connection
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Range slider handlers
+    const captureInterval = document.getElementById('captureInterval');
+    const captureIntervalValue = document.getElementById('captureIntervalValue');
+    const idleThreshold = document.getElementById('idleThreshold');
+    const idleThresholdValue = document.getElementById('idleThresholdValue');
+    const statusDiv = document.getElementById('status');
+
+    captureInterval.addEventListener('input', (e) => {
+      captureIntervalValue.textContent = e.target.value + ' min';
+    });
+
+    idleThreshold.addEventListener('input', (e) => {
+      idleThresholdValue.textContent = e.target.value + ' min';
+    });
+
+    function showStatus(message, isError = false) {
+      statusDiv.textContent = message;
+      statusDiv.className = 'status ' + (isError ? 'error' : 'success');
+      statusDiv.classList.remove('hidden');
+    }
+
+    // Form submission
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const config = {
+        serverUrl: document.getElementById('serverUrl').value,
+        email: document.getElementById('email').value,
+        agentKey: document.getElementById('agentKey').value,
+        captureInterval: parseInt(captureInterval.value),
+        idleThreshold: parseInt(idleThreshold.value) * 60, // Convert to seconds
+      };
+
+      try {
+        if (window.electronAPI) {
+          await window.electronAPI.saveConfig(config);
+          showStatus('Settings saved! Connecting...');
+        } else {
+          showStatus('Configuration saved locally.');
+        }
+      } catch (error) {
+        showStatus('Failed to save settings: ' + error.message, true);
+      }
+    });
+
+    // Test connection
+    document.getElementById('testBtn').addEventListener('click', async () => {
+      const config = {
+        serverUrl: document.getElementById('serverUrl').value,
+        email: document.getElementById('email').value,
+        agentKey: document.getElementById('agentKey').value,
+      };
+
+      try {
+        if (window.electronAPI) {
+          const result = await window.electronAPI.testConnection(config);
+          if (result.success) {
+            showStatus('Connection successful!');
+          } else {
+            showStatus('Connection failed: ' + result.error, true);
+          }
+        } else {
+          showStatus('Testing connection to: ' + config.serverUrl);
+        }
+      } catch (error) {
+        showStatus('Connection test failed: ' + error.message, true);
+      }
+    });
+
+    // Load existing config
+    async function loadConfig() {
+      try {
+        if (window.electronAPI) {
+          const config = await window.electronAPI.getConfig();
+          if (config) {
+            document.getElementById('serverUrl').value = config.serverUrl || '';
+            document.getElementById('email').value = config.email || '';
+            document.getElementById('agentKey').value = config.agentKey || '';
+            captureInterval.value = config.captureInterval || 2;
+            captureIntervalValue.textContent = (config.captureInterval || 2) + ' min';
+            idleThreshold.value = Math.floor((config.idleThreshold || 300) / 60);
+            idleThresholdValue.textContent = Math.floor((config.idleThreshold || 300) / 60) + ' min';
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load config:', error);
+      }
+    }
+
+    loadConfig();
+  </script>
+</body>
+</html>
