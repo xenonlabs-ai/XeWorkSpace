@@ -8,8 +8,9 @@ import { EmployeeGrid } from "./employee-grid";
 import { EmployeeDetailDialog } from "./employee-detail-dialog";
 import { CCTVGrid } from "./cctv-grid";
 import { ConsentManagement } from "./consent-management";
+import { DailyReport } from "./daily-report";
 import { monitoringApi } from "@/lib/api";
-import { Tv, Users, Settings } from "lucide-react";
+import { Tv, Users, Settings, BarChart3 } from "lucide-react";
 
 interface Session {
   id: string;
@@ -111,6 +112,10 @@ export function MonitoringContent() {
             <Users className="h-4 w-4" />
             Sessions
           </TabsTrigger>
+          <TabsTrigger value="reports" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Daily Reports
+          </TabsTrigger>
           <TabsTrigger value="settings" className="gap-2">
             <Settings className="h-4 w-4" />
             Settings
@@ -127,6 +132,10 @@ export function MonitoringContent() {
             isLoading={isLoading}
             onSelectEmployee={setSelectedEmployee}
           />
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <DailyReport />
         </TabsContent>
 
         <TabsContent value="settings">
@@ -154,3 +163,4 @@ export { CCTVGrid } from "./cctv-grid";
 export { CCTVFeed } from "./cctv-feed";
 export { LiveViewer } from "./live-viewer";
 export { ConsentManagement } from "./consent-management";
+export { DailyReport } from "./daily-report";
