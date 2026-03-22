@@ -11,7 +11,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Filter by organization for multi-tenancy
+    const where: any = {};
+    if (session.user.organizationId) {
+      where.organizationId = session.user.organizationId;
+    }
+
     const teams = await prisma.team.findMany({
+      where,
       include: {
         members: {
           include: {
@@ -63,10 +70,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json(
+        { error: "You must be part of an organization to create teams" },
+        { status: 403 }
+      );
+    }
+
     const team = await prisma.team.create({
       data: {
         name,
         description,
+        organization: {
+          connect: { id: session.user.organizationId },
+        },
         members: memberIds
           ? {
               create: memberIds.map((userId: string) => ({

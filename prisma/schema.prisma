@@ -1,5 +1,6 @@
-// Prisma Schema for Taskify
+// Prisma Schema for XeWorkspace
 // Database: SQLite
+// Multi-tenant architecture
 
 generator client {
   provider = "prisma-client-js"
@@ -10,25 +11,78 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ==================== ORGANIZATION (MULTI-TENANCY) ====================
+
+model Organization {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique // URL-friendly identifier (e.g., "xenonlabs")
+  domain      String?  @unique // Custom domain (e.g., "xenonlabs.ai")
+  logo        String?
+  description String?
+  website     String?
+  industry    String?
+  size        String?  // "1-10", "11-50", "51-200", "201-500", "500+"
+  timezone    String   @default("UTC")
+  settings    String?  // JSON for org-level settings
+
+  // Subscription/Billing
+  plan        String   @default("FREE") // FREE, STARTER, PROFESSIONAL, ENTERPRISE
+  planExpiry  DateTime?
+
+  // Status
+  status      String   @default("ACTIVE") // ACTIVE, SUSPENDED, CANCELLED
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users             User[]
+  teams             Team[]
+  projects          Project[]
+  invitations       OrgInvitation[]
+  calendarEvents    CalendarEvent[]
+  reports           Report[]
+}
+
+model OrgInvitation {
+  id             String    @id @default(cuid())
+  organizationId String
+  email          String
+  role           String    @default("MEMBER")
+  token          String    @unique
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+}
+
 // ==================== USER & AUTHENTICATION ====================
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String?
-  firstName     String
-  lastName      String
-  avatar        String?
-  phone         String?
-  location      String?
-  role          String    @default("MEMBER") // ADMIN, MANAGER, MEMBER, VIEWER
-  status        String    @default("ACTIVE") // ACTIVE, AWAY, OFFLINE, ON_LEAVE
-  department    String?
-  jobTitle      String?
-  skills        String?   // JSON string array
-  joinedAt      DateTime  @default(now())
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  email          String    @unique
+  password       String?
+  firstName      String
+  lastName       String
+  avatar         String?
+  phone          String?
+  location       String?
+  role           String    @default("MEMBER") // OWNER, ADMIN, MANAGER, MEMBER, VIEWER
+  status         String    @default("ACTIVE") // ACTIVE, AWAY, OFFLINE, ON_LEAVE
+  department     String?
+  jobTitle       String?
+  skills         String?   // JSON string array
+  joinedAt       DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
 
   // NextAuth fields
   emailVerified DateTime?
@@ -51,6 +105,8 @@ model User {
   taskComments          TaskComment[]
   agentTokens           AgentToken[]
   monitoringConsent     MonitoringConsent?
+
+  @@index([organizationId])
 }
 
 // NextAuth Models
@@ -92,14 +148,20 @@ model VerificationToken {
 // ==================== TEAMS ====================
 
 model Team {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Multi-tenancy
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   members  TeamMember[]
   projects Project[]
+
+  @@index([organizationId])
 }
 
 model TeamMember {
@@ -118,20 +180,26 @@ model TeamMember {
 // ==================== PROJECTS ====================
 
 model Project {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  status      String   @default("PLANNING") // PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
-  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
-  startDate   DateTime?
-  endDate     DateTime?
-  progress    Int      @default(0)
-  teamId      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  description    String?
+  status         String    @default("PLANNING") // PLANNING, IN_PROGRESS, ON_HOLD, COMPLETED, CANCELLED
+  priority       String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  startDate      DateTime?
+  endDate        DateTime?
+  progress       Int       @default(0)
+  teamId         String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Multi-tenancy
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   team  Team?  @relation(fields: [teamId], references: [id])
   tasks Task[]
+
+  @@index([organizationId])
 }
 
 // ==================== TASKS ====================
@@ -372,30 +440,42 @@ model Notification {
 // ==================== CALENDAR EVENTS ====================
 
 model CalendarEvent {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  startTime   DateTime
-  endTime     DateTime
-  allDay      Boolean  @default(false)
-  location    String?
-  type        String // "meeting", "deadline", "reminder", etc.
-  creatorId   String
-  attendees   String? // JSON array of user IDs
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(cuid())
+  title          String
+  description    String?
+  startTime      DateTime
+  endTime        DateTime
+  allDay         Boolean  @default(false)
+  location       String?
+  type           String // "meeting", "deadline", "reminder", etc.
+  creatorId      String
+  attendees      String? // JSON array of user IDs
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Multi-tenancy
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }
 
 // ==================== REPORTS ====================
 
 model Report {
-  id         String    @id @default(cuid())
-  name       String
-  type       String // "performance", "attendance", "tasks", "custom"
-  parameters String? // JSON object for filter parameters
-  schedule   String? // Cron expression for scheduled reports
-  lastRunAt  DateTime?
-  creatorId  String
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  name           String
+  type           String // "performance", "attendance", "tasks", "custom"
+  parameters     String? // JSON object for filter parameters
+  schedule       String? // Cron expression for scheduled reports
+  lastRunAt      DateTime?
+  creatorId      String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Multi-tenancy
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
 }

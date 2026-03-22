@@ -6,40 +6,86 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Starting database seed...");
 
-  // Create XenonLabs Admin User
+  // ==================== CREATE ORGANIZATIONS ====================
+
+  // Create XenonLabs Organization
+  const xenonlabsOrg = await prisma.organization.upsert({
+    where: { slug: "xenonlabs" },
+    update: {},
+    create: {
+      name: "XenonLabs",
+      slug: "xenonlabs",
+      domain: "xenonlabs.ai",
+      description: "AI-powered solutions company",
+      industry: "Technology",
+      size: "11-50",
+      timezone: "Asia/Kolkata",
+      plan: "ENTERPRISE",
+    },
+  });
+  console.log("✅ Created XenonLabs organization:", xenonlabsOrg.name);
+
+  // Create Demo Organization
+  const demoOrg = await prisma.organization.upsert({
+    where: { slug: "demo-company" },
+    update: {},
+    create: {
+      name: "Demo Company",
+      slug: "demo-company",
+      description: "Demo organization for testing",
+      industry: "Technology",
+      size: "51-200",
+      timezone: "UTC",
+      plan: "PROFESSIONAL",
+    },
+  });
+  console.log("✅ Created Demo organization:", demoOrg.name);
+
+  // ==================== CREATE USERS ====================
+
+  // Create XenonLabs Admin User (OWNER)
   const xenonAdminPassword = await bcrypt.hash("Xenon$1234", 10);
   const xenonAdmin = await prisma.user.upsert({
     where: { email: "support@xenonlabs.ai" },
-    update: { password: xenonAdminPassword },
+    update: {
+      password: xenonAdminPassword,
+      organizationId: xenonlabsOrg.id,
+      role: "OWNER",
+    },
     create: {
       email: "support@xenonlabs.ai",
       password: xenonAdminPassword,
       firstName: "Support",
       lastName: "Admin",
-      role: "ADMIN",
+      role: "OWNER",
       status: "ACTIVE",
       department: "Administration",
       jobTitle: "System Administrator",
       skills: JSON.stringify(["Administration", "Support", "Management"]),
+      organizationId: xenonlabsOrg.id,
     },
   });
-  console.log("✅ Created XenonLabs admin:", xenonAdmin.email);
+  console.log("✅ Created XenonLabs owner:", xenonAdmin.email);
 
   // Create XenonLabs Employee User
   const xenonEmployeePassword = await bcrypt.hash("Xenon$1234", 10);
   const xenonEmployee = await prisma.user.upsert({
     where: { email: "abhisek.sinha@xenonlabs.ai" },
-    update: { password: xenonEmployeePassword },
+    update: {
+      password: xenonEmployeePassword,
+      organizationId: xenonlabsOrg.id,
+    },
     create: {
       email: "abhisek.sinha@xenonlabs.ai",
       password: xenonEmployeePassword,
       firstName: "Abhisek",
       lastName: "Sinha",
-      role: "MEMBER",
+      role: "ADMIN",
       status: "ACTIVE",
       department: "Engineering",
       jobTitle: "Software Engineer",
       skills: JSON.stringify(["JavaScript", "React", "Node.js", "TypeScript"]),
+      organizationId: xenonlabsOrg.id,
     },
   });
   console.log("✅ Created XenonLabs employee:", xenonEmployee.email);
@@ -159,6 +205,7 @@ async function main() {
       id: "team-engineering",
       name: "Engineering Team",
       description: "Core engineering and development team",
+      organizationId: demoOrg.id,
     },
   });
   console.log("✅ Created team:", team.name);
@@ -194,6 +241,7 @@ async function main() {
       priority: "HIGH",
       progress: 45,
       teamId: team.id,
+      organizationId: demoOrg.id,
       startDate: new Date("2026-01-01"),
       endDate: new Date("2026-06-30"),
     },

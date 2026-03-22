@@ -18,6 +18,10 @@ export async function GET(request: NextRequest) {
     const where: any = {};
     if (status) where.status = status;
     if (teamId) where.teamId = teamId;
+    // Filter by organization for multi-tenancy
+    if (session.user.organizationId) {
+      where.organizationId = session.user.organizationId;
+    }
 
     const projects = await prisma.project.findMany({
       where,
@@ -65,6 +69,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!session.user.organizationId) {
+      return NextResponse.json(
+        { error: "You must be part of an organization to create projects" },
+        { status: 403 }
+      );
+    }
+
     const project = await prisma.project.create({
       data: {
         name,
@@ -74,6 +85,9 @@ export async function POST(request: NextRequest) {
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
         teamId,
+        organization: {
+          connect: { id: session.user.organizationId },
+        },
       },
       include: {
         team: {
