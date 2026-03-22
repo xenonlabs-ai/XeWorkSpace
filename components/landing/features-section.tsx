@@ -14,12 +14,32 @@ import {
 	Bell,
 	FileText,
 	Settings,
-	ArrowRight
+	ArrowRight,
+	Eye,
+	Monitor,
+	Camera,
 } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
 
 const features = [
+	{
+		icon: Eye,
+		title: "Live Employee Monitoring",
+		description: "Real-time screen streaming and activity tracking. Monitor your remote team with live CCTV-style dashboard and instant alerts.",
+		color: "from-red-500 to-orange-500",
+		bgColor: "bg-red-500/10",
+		textColor: "text-red-500",
+		highlight: true,
+	},
+	{
+		icon: Monitor,
+		title: "Screen Capture",
+		description: "Automatic screenshot capture at configurable intervals. Build a visual timeline of employee work with full privacy controls.",
+		color: "from-cyan-500 to-blue-500",
+		bgColor: "bg-cyan-500/10",
+		textColor: "text-cyan-500",
+	},
 	{
 		icon: CheckSquare,
 		title: "Task Management",
@@ -52,30 +72,14 @@ const features = [
 		bgColor: "bg-purple-500/10",
 		textColor: "text-purple-500",
 	},
-	{
-		icon: Calendar,
-		title: "Smart Scheduling",
-		description: "Integrated calendar for meetings, deadlines, and events. Smart scheduling suggestions based on team availability.",
-		color: "from-pink-500 to-rose-500",
-		bgColor: "bg-pink-500/10",
-		textColor: "text-pink-500",
-	},
-	{
-		icon: MessageSquare,
-		title: "Team Communication",
-		description: "Built-in messaging, file sharing, and real-time collaboration. Keep conversations organized by project and task.",
-		color: "from-cyan-500 to-teal-500",
-		bgColor: "bg-cyan-500/10",
-		textColor: "text-cyan-500",
-	},
 ]
 
 const additionalFeatures = [
+	{ icon: Camera, title: "Screenshots", description: "Auto screen capture" },
 	{ icon: Target, title: "Goal Setting", description: "OKRs and KPIs tracking" },
 	{ icon: FileText, title: "Reports", description: "Custom analytics reports" },
-	{ icon: Shield, title: "Permissions", description: "Role-based access control" },
-	{ icon: Bell, title: "Notifications", description: "Smart alerts and reminders" },
-	{ icon: Zap, title: "Automation", description: "Workflow automation" },
+	{ icon: Shield, title: "Privacy", description: "GDPR compliant" },
+	{ icon: Bell, title: "Alerts", description: "Real-time notifications" },
 	{ icon: Settings, title: "Integrations", description: "Connect your tools" },
 ]
 
@@ -113,9 +117,22 @@ export function FeaturesSection() {
 							viewport={{ once: true }}
 							transition={{ duration: 0.5, delay: index * 0.1 }}
 						>
-							<div className="group relative h-full p-6 rounded-2xl border bg-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+							<div className={`group relative h-full p-6 rounded-2xl border bg-card hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden ${feature.highlight ? 'ring-2 ring-red-500/20' : ''}`}>
 								{/* Gradient background on hover */}
 								<div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+
+								{/* Highlight badge */}
+								{feature.highlight && (
+									<div className="absolute top-4 right-4">
+										<Badge variant="secondary" className="bg-red-500/10 text-red-500 border-red-500/20">
+											<span className="relative flex h-2 w-2 mr-1.5">
+												<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+												<span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+											</span>
+											New
+										</Badge>
+									</div>
+								)}
 
 								{/* Icon */}
 								<div className={`relative inline-flex p-3 rounded-xl ${feature.bgColor} mb-4`}>
@@ -123,7 +140,7 @@ export function FeaturesSection() {
 								</div>
 
 								{/* Content */}
-								<h3 className="relative text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+								<h3 className={`relative text-xl font-semibold mb-3 group-hover:text-primary transition-colors ${feature.highlight ? 'pr-16' : ''}`}>
 									{feature.title}
 								</h3>
 								<p className="relative text-muted-foreground leading-relaxed">

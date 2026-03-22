@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowRight, Play, CheckCircle2, Sparkles, Users, BarChart3, Clock, TrendingUp } from "lucide-react"
+import { ArrowRight, Play, CheckCircle2, Users, BarChart3, Clock, TrendingUp, Monitor, Eye } from "lucide-react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 
@@ -30,13 +30,15 @@ export function HeroSection() {
 					>
 						<Badge
 							variant="outline"
-							className="mb-8 px-4 py-2 text-sm font-medium border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer group"
+							className="mb-8 px-6 py-3 text-base font-medium border-red-500/50 bg-red-500/10 hover:bg-red-500/20 transition-colors cursor-pointer group shadow-lg shadow-red-500/20"
 						>
-							<Sparkles className="w-4 h-4 mr-2 text-primary group-hover:animate-spin" />
-							<span>Introducing XeTask 2.0</span>
-							<span className="mx-2 text-muted-foreground">—</span>
-							<span className="text-primary">AI-powered insights</span>
-							<ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
+							<span className="relative flex h-3 w-3 mr-3">
+								<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+								<span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+							</span>
+							<Eye className="w-4 h-4 mr-2 text-red-500" />
+							<span className="text-red-500 font-bold">LIVE EMPLOYEE MONITORING</span>
+							<ArrowRight className="w-4 h-4 ml-3 group-hover:translate-x-1 transition-transform text-red-500" />
 						</Badge>
 					</motion.div>
 
@@ -47,10 +49,19 @@ export function HeroSection() {
 						transition={{ duration: 0.5, delay: 0.1 }}
 						className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight mb-6 leading-[1.1]"
 					>
-						<span className="block">The Modern Way to</span>
-						<span className="relative">
+						<span className="relative inline-flex items-center gap-3">
+							<span className="bg-gradient-to-r from-red-500 via-orange-500 to-red-600 bg-clip-text text-transparent">
+								Live Monitoring
+							</span>
+							<span className="relative flex h-4 w-4">
+								<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+								<span className="relative inline-flex rounded-full h-4 w-4 bg-red-500"></span>
+							</span>
+						</span>
+						<span className="block mt-2">of Your Employees</span>
+						<span className="relative block mt-2">
 							<span className="bg-gradient-to-r from-primary via-blue-500 to-violet-500 bg-clip-text text-transparent">
-								Manage Your Team
+								In Real-Time
 							</span>
 							<svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 358 12" fill="none" xmlns="http://www.w3.org/2000/svg">
 								<motion.path
@@ -80,8 +91,8 @@ export function HeroSection() {
 						transition={{ duration: 0.5, delay: 0.2 }}
 						className="text-lg md:text-xl text-muted-foreground max-w-2xl mb-8 leading-relaxed"
 					>
-						Streamline task tracking, attendance monitoring, and performance reviews.
-						Empower your team with real-time analytics and seamless collaboration.
+						Watch employee screens in real-time with CCTV-style live streaming.
+						See exactly what your team is working on, track productivity, and boost accountability.
 					</motion.p>
 
 					{/* Feature Pills */}
@@ -92,17 +103,28 @@ export function HeroSection() {
 						className="flex flex-wrap justify-center gap-3 mb-10"
 					>
 						{[
+							{ icon: Eye, label: "Live Screen Streaming", color: "text-red-500", highlight: true },
+							{ icon: Monitor, label: "CCTV Dashboard", color: "text-orange-500", highlight: true },
 							{ icon: CheckCircle2, label: "Task Management", color: "text-green-500" },
 							{ icon: Clock, label: "Time Tracking", color: "text-blue-500" },
 							{ icon: BarChart3, label: "Analytics", color: "text-purple-500" },
-							{ icon: Users, label: "Team Collaboration", color: "text-orange-500" },
 						].map((feature) => (
 							<div
 								key={feature.label}
-								className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50 border border-border/50 text-sm hover:bg-muted transition-colors"
+								className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-colors ${
+									feature.highlight
+										? "bg-red-500/10 border-2 border-red-500/50 hover:bg-red-500/20 shadow-md shadow-red-500/10"
+										: "bg-muted/50 border border-border/50 hover:bg-muted"
+								}`}
 							>
 								<feature.icon className={`w-4 h-4 ${feature.color}`} />
-								<span>{feature.label}</span>
+								<span className={feature.highlight ? "font-semibold" : ""}>{feature.label}</span>
+								{feature.highlight && (
+									<span className="relative flex h-2 w-2">
+										<span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+										<span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+									</span>
+								)}
 							</div>
 						))}
 					</motion.div>
@@ -114,15 +136,16 @@ export function HeroSection() {
 						transition={{ duration: 0.5, delay: 0.4 }}
 						className="flex flex-col sm:flex-row gap-4 mb-6"
 					>
-						<Button size="lg" className="text-base px-8 h-12 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all" asChild>
+						<Button size="lg" className="text-base px-8 h-12 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 shadow-lg shadow-red-500/25 hover:shadow-xl hover:shadow-red-500/30 transition-all border-0" asChild>
 							<Link href="/auth/register">
-								Start Free Trial
+								<Eye className="mr-2 w-5 h-5" />
+								Start Live Monitoring
 								<ArrowRight className="ml-2 w-4 h-4" />
 							</Link>
 						</Button>
-						<Button size="lg" variant="outline" className="text-base px-8 h-12 group">
-							<Play className="mr-2 w-4 h-4 group-hover:scale-110 transition-transform" />
-							Watch Demo
+						<Button size="lg" variant="outline" className="text-base px-8 h-12 group border-red-500/30 hover:border-red-500/50 hover:bg-red-500/5">
+							<Play className="mr-2 w-4 h-4 group-hover:scale-110 transition-transform text-red-500" />
+							Watch Live Demo
 						</Button>
 					</motion.div>
 

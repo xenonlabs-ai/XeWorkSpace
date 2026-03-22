@@ -3,6 +3,7 @@
 import { LandingHeader } from "./landing-header"
 import { HeroSection } from "./hero-section"
 import { StatsSection } from "./stats-section"
+import { LiveMonitoringSection } from "./live-monitoring-section"
 import { FeaturesSection } from "./features-section"
 import { HowItWorksSection } from "./how-it-works-section"
 import { TestimonialsSection } from "./testimonials-section"
@@ -17,6 +18,7 @@ export function LandingPage() {
 			<LandingHeader />
 			<main>
 				<HeroSection />
+				<LiveMonitoringSection />
 				<StatsSection />
 				<FeaturesSection />
 				<HowItWorksSection />
