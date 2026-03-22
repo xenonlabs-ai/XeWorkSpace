@@ -40,7 +40,8 @@ docs
 xe-desktop-agent
 
 # Scripts (not needed in container)
-scripts
+scripts/*.ts
+scripts/aws
 
 # Database (will be created in container)
 prisma/*.db
