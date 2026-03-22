@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { screenshotStorage } from "@/lib/storage";
 
 // Helper to validate agent token
 async function validateAgentToken(request: NextRequest) {
@@ -117,9 +116,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify session belongs to agent's user
+    // Verify session belongs to agent's user and get organization
     const session = await prisma.desktopSession.findUnique({
       where: { id: sessionId },
+      include: {
+        user: {
+          select: { organizationId: true },
+        },
+      },
     });
 
     if (!session) {
@@ -130,23 +134,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Save file to uploads directory
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "screenshots");
-    await mkdir(uploadDir, { recursive: true });
+    // Get organization ID for storage partitioning
+    const organizationId = session.user.organizationId || "default";
 
+    // Upload to storage (S3 or local based on config)
     const timestamp = Date.now();
     const filename = `${sessionId}-${timestamp}.png`;
-    const filepath = path.join(uploadDir, filename);
-
     const bytes = await file.arrayBuffer();
-    await writeFile(filepath, Buffer.from(bytes));
+    const imageUrl = await screenshotStorage.upload(
+      Buffer.from(bytes),
+      filename,
+      organizationId
+    );
 
     // Create screenshot record
     const screenshot = await prisma.screenshot.create({
       data: {
         sessionId,
-        imageUrl: `/uploads/screenshots/${filename}`,
-        thumbnailUrl: `/uploads/screenshots/${filename}`, // Same for now
+        imageUrl,
+        thumbnailUrl: imageUrl, // Same for now, can generate thumbnails later
       },
     });
 
