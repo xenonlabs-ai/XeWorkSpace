@@ -184,4 +184,17 @@ export const monitoringApi = {
       method: "POST",
       body: JSON.stringify({ action: "revoke", reason }),
     }),
+
+  // Employee self-service consent
+  getMyConsent: () => fetchApi<any>("/monitoring/consent/me"),
+  submitMyConsent: (accepted: boolean, consentVersion?: string) =>
+    fetchApi<any>("/monitoring/consent/me", {
+      method: "POST",
+      body: JSON.stringify({ accepted, consentVersion: consentVersion || "1.0" }),
+    }),
+  revokeMyConsent: (reason?: string) =>
+    fetchApi<any>("/monitoring/consent/me", {
+      method: "POST",
+      body: JSON.stringify({ action: "revoke", reason }),
+    }),
 };
