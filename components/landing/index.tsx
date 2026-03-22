@@ -5,6 +5,7 @@ import { HeroSection } from "./hero-section"
 import { StatsSection } from "./stats-section"
 import { LiveMonitoringSection } from "./live-monitoring-section"
 import { FeaturesSection } from "./features-section"
+import { ReportsSection } from "./reports-section"
 import { HowItWorksSection } from "./how-it-works-section"
 import { TestimonialsSection } from "./testimonials-section"
 import { PricingSection } from "./pricing-section"
@@ -21,6 +22,7 @@ export function LandingPage() {
 				<LiveMonitoringSection />
 				<StatsSection />
 				<FeaturesSection />
+				<ReportsSection />
 				<HowItWorksSection />
 				<TestimonialsSection />
 				<PricingSection />
@@ -36,6 +38,7 @@ export { LandingHeader } from "./landing-header"
 export { HeroSection } from "./hero-section"
 export { StatsSection } from "./stats-section"
 export { FeaturesSection } from "./features-section"
+export { ReportsSection } from "./reports-section"
 export { HowItWorksSection } from "./how-it-works-section"
 export { TestimonialsSection } from "./testimonials-section"
 export { PricingSection } from "./pricing-section"
