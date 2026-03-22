@@ -1,6 +1,6 @@
-# XeTask Desktop Agent
+# XeWorkspace Desktop Agent
 
-Electron-based desktop monitoring agent for XeTask employee monitoring system.
+Electron-based desktop monitoring agent for XeWorkspace employee monitoring system.
 
 ## Features
 
@@ -41,7 +41,7 @@ npm run package:linux  # Linux only
 
 On first launch, the agent will open a settings window where you need to configure:
 
-1. **Server URL**: The XeTask server URL (e.g., `http://localhost:3000`)
+1. **Server URL**: The XeWorkspace server URL (e.g., `http://localhost:3000`)
 2. **Email**: Your registered email address
 3. **Agent Key**: Your unique agent key (generated from the dashboard)
 4. **Capture Interval**: Screenshot frequency (1-10 minutes)

@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface ConfigSchema {
   serverUrl: string;
   email: string;
-  agentKey: string;
+  password: string;
   token: string | null;
   sessionId: string | null;
   deviceId: string;
@@ -17,7 +17,7 @@ interface ConfigSchema {
 const defaults: ConfigSchema = {
   serverUrl: 'http://localhost:3000',
   email: '',
-  agentKey: '',
+  password: '',
   token: null,
   sessionId: null,
   deviceId: uuidv4(),
@@ -56,7 +56,7 @@ class ConfigStore {
   }
 
   isConfigured(): boolean {
-    return !!(this.get('email') && this.get('agentKey') && this.get('serverUrl'));
+    return !!(this.get('email') && this.get('password') && this.get('serverUrl'));
   }
 
   getAll(): ConfigSchema {

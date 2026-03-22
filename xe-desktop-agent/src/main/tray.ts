@@ -37,7 +37,7 @@ export function createTray(callbacks: TrayCallbacks): Tray {
   }
 
   tray = new Tray(icon);
-  tray.setToolTip('XeTask Desktop Agent');
+  tray.setToolTip('XeWorkspace Desktop Agent');
 
   const updateMenu = () => {
     const isMonitoring = callbacks.isMonitoring();
@@ -45,7 +45,7 @@ export function createTray(callbacks: TrayCallbacks): Tray {
 
     const contextMenu = Menu.buildFromTemplate([
       {
-        label: 'XeTask Agent',
+        label: 'XeWorkspace Agent',
         enabled: false,
       },
       { type: 'separator' },
@@ -112,7 +112,7 @@ export function createTray(callbacks: TrayCallbacks): Tray {
 
 export function updateTrayTooltip(status: string): void {
   if (tray) {
-    tray.setToolTip(`XeTask Agent - ${status}`);
+    tray.setToolTip(`XeWorkspace Agent - ${status}`);
   }
 }
 
@@ -125,7 +125,7 @@ export function showSettingsWindow(): void {
   settingsWindow = new BrowserWindow({
     width: 450,
     height: 550,
-    title: 'XeTask Agent Settings',
+    title: 'XeWorkspace Agent Settings',
     resizable: false,
     webPreferences: {
       nodeIntegration: false,

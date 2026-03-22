@@ -87,7 +87,7 @@ export function CTASection() {
 						transition={{ delay: 0.2 }}
 						className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
 					>
-						Join 2,000+ teams already using XeTask to streamline operations,
+						Join 2,000+ teams already using XeWorkspace to streamline operations,
 						boost productivity, and achieve remarkable results.
 					</motion.p>
 

@@ -1,9 +1,9 @@
 {
   "name": "xe-desktop-agent",
   "version": "1.0.0",
-  "description": "XeTask Desktop Monitoring Agent",
+  "description": "XeWorkspace Desktop Monitoring Agent",
   "main": "dist/main/index.js",
-  "author": "XeTask",
+  "author": "XeWorkspace",
   "license": "MIT",
   "scripts": {
     "dev": "electron-vite dev",
@@ -34,8 +34,8 @@
     "vite": "^5.0.10"
   },
   "build": {
-    "appId": "com.xetask.desktop-agent",
-    "productName": "XeTask Agent",
+    "appId": "com.xeworkspace.desktop-agent",
+    "productName": "XeWorkspace Agent",
     "directories": {
       "output": "release"
     },

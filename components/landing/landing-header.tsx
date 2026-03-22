@@ -82,7 +82,7 @@ export function LandingHeader() {
 							</div>
 						</div>
 						<span className="text-xl font-bold tracking-tight">
-							Xe<span className="text-primary">Task</span>
+							Xe<span className="text-primary">Workspace</span>
 						</span>
 					</Link>
 
@@ -174,7 +174,7 @@ export function LandingHeader() {
 										<div className="bg-gradient-to-br from-primary to-blue-600 p-2 rounded-lg">
 											<Wallet className="h-5 w-5 text-white" />
 										</div>
-										<span className="text-xl font-bold">XeTask</span>
+										<span className="text-xl font-bold">XeWorkspace</span>
 									</Link>
 								</div>
 

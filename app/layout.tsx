@@ -5,8 +5,8 @@ import { Inter } from "next/font/google"
 import { ReactNode } from "react"
 
 export const metadata = {
-	title: "XeTask - Team Management & Productivity Platform",
-	description: "Manage your tasks and team with ease using XeTask.",
+	title: "XeWorkspace - Team Management & Productivity Platform",
+	description: "Manage your team, monitor productivity, and boost performance with XeWorkspace.",
 }
 
 const inter = Inter({

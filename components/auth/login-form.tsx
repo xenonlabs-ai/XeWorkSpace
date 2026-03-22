@@ -54,7 +54,7 @@ export function LoginForm() {
 						<Logo className="" size="large" showText={false} />
 					</div>
 					<h2 className="mt-4 text-3xl font-semibold">Welcome back</h2>
-					<p className="mt-2 text-muted-foreground">Sign in to your XeTask account</p>
+					<p className="mt-2 text-muted-foreground">Sign in to your XeWorkspace account</p>
 				</div>
 
 				<Card>

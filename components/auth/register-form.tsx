@@ -113,7 +113,7 @@ export function RegisterForm() {
 						<Logo size="large" showText={false} />
 					</div>
 					<h2 className="mt-4 text-3xl font-semibold">Create an account</h2>
-					<p className="mt-2 text-muted-foreground">Sign up for XeTask to manage your team</p>
+					<p className="mt-2 text-muted-foreground">Sign up for XeWorkspace to manage your team</p>
 				</div>
 
 				<Card>

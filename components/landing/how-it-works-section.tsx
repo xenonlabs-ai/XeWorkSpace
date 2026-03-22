@@ -49,7 +49,7 @@ export function HowItWorksSection() {
 						</span>
 					</h2>
 					<p className="text-lg text-muted-foreground">
-						XeTask is designed to be intuitive and easy to use. Get your team up and running in no time.
+						XeWorkspace is designed to be intuitive and easy to use. Get your team up and running in no time.
 					</p>
 				</div>
 

@@ -19,7 +19,7 @@ export function DocHeader() {
 				<div className="mr-4 hidden md:flex">
 					<Link href="/" className="mr-6 flex items-center space-x-2">
 						<Wallet className="h-6 w-6" />
-						<span className="hidden font-semibold sm:inline-block">XeTask</span>
+						<span className="hidden font-semibold sm:inline-block">XeWorkspace</span>
 					</Link>
 					<nav className="flex items-center space-x-6 text-sm font-medium">
 						<Link href="/" className="transition-colors hover:text-foreground/80">
@@ -72,7 +72,7 @@ export function DocHeader() {
 
 				<Link href="/" className="mr-6 flex items-center md:hidden">
 					<Wallet className="h-6 w-6" />
-					<span className="ml-2 font-semibold">XeTask</span>
+					<span className="ml-2 font-semibold">XeWorkspace</span>
 				</Link>
 
 				<div className="flex flex-1 items-center justify-end space-x-2">
@@ -110,7 +110,7 @@ function MobileNav() {
 		<div className="flex flex-col space-y-4 py-4">
 			<Link href="/" className="flex items-center space-x-2">
 				<Wallet className="h-6 w-6" />
-				<span className="font-semibold">XeTask</span>
+				<span className="font-semibold">XeWorkspace</span>
 			</Link>
 			<div className="flex flex-col space-y-3">
 				<Link href="/" className="text-muted-foreground">

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as os from 'os';
+import fetch from 'node-fetch';
 import { configStore } from '../store/config';
 import { apiClient } from '../api/client';
 import { screenshotCapture } from '../capture/screenshot';
@@ -25,7 +26,7 @@ class DesktopAgent {
   private consentResolve: ((value: boolean) => void) | null = null;
 
   async initialize(): Promise<void> {
-    console.log('Initializing XeTask Desktop Agent...');
+    console.log('Initializing XeWorkspace Desktop Agent...');
 
     // Setup IPC handlers for consent
     this.setupConsentHandlers();
@@ -131,6 +132,50 @@ class DesktopAgent {
         this.consentWindow = null;
       }
     });
+
+    // Config handlers
+    ipcMain.handle('get-config', () => {
+      return configStore.getAll();
+    });
+
+    ipcMain.handle('save-config', async (_event, config: any) => {
+      try {
+        if (config.serverUrl) configStore.set('serverUrl', config.serverUrl);
+        if (config.email) configStore.set('email', config.email);
+        if (config.password) configStore.set('password', config.password);
+        if (config.captureInterval) configStore.set('captureInterval', config.captureInterval);
+        if (config.idleThreshold) configStore.set('idleThreshold', config.idleThreshold);
+
+        // Re-initialize after config change
+        await this.reinitialize();
+        return { success: true };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    });
+
+    ipcMain.handle('test-connection', async (_event, config: any) => {
+      try {
+        const response = await fetch(`${config.serverUrl}/api/monitoring/agent/auth`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: config.email,
+            password: config.password,
+            deviceId: configStore.getDeviceId(),
+          }),
+        });
+
+        if (response.ok) {
+          return { success: true };
+        } else {
+          const data = await response.json() as { error?: string };
+          return { success: false, error: data.error || 'Authentication failed' };
+        }
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    });
   }
 
   private async showConsentWindow(): Promise<boolean> {
@@ -145,7 +190,7 @@ class DesktopAgent {
         maximizable: false,
         alwaysOnTop: true,
         center: true,
-        title: 'XeTask - Monitoring Consent',
+        title: 'XeWorkspace - Monitoring Consent',
         webPreferences: {
           preload: path.join(__dirname, '../preload.js'),
           contextIsolation: true,

@@ -14,7 +14,7 @@ const testimonials = [
 		company: "TechCorp Inc.",
 		avatar: "SJ",
 		rating: 5,
-		content: "XeTask has transformed how we manage our engineering team. The performance review features are exceptional, and the analytics help us make data-driven decisions. We've seen a 35% improvement in project delivery times.",
+		content: "XeWorkspace has transformed how we manage our engineering team. The performance review features are exceptional, and the analytics help us make data-driven decisions. We've seen a 35% improvement in project delivery times.",
 		highlight: "35% faster delivery",
 	},
 	{
@@ -23,7 +23,7 @@ const testimonials = [
 		company: "StartupXYZ",
 		avatar: "MC",
 		rating: 5,
-		content: "We've tried many team management tools, but XeTask stands out. The attendance tracking and task management integration is seamless. Our productivity increased by 40% within the first month.",
+		content: "We've tried many team management tools, but XeWorkspace stands out. The attendance tracking and task management integration is seamless. Our productivity increased by 40% within the first month.",
 		highlight: "40% productivity boost",
 	},
 	{
@@ -32,7 +32,7 @@ const testimonials = [
 		company: "Global Solutions",
 		avatar: "ER",
 		rating: 5,
-		content: "The performance review system in XeTask is incredibly thorough. It's helped us establish clear goals and provide meaningful feedback to our team members. Employee satisfaction has improved significantly.",
+		content: "The performance review system in XeWorkspace is incredibly thorough. It's helped us establish clear goals and provide meaningful feedback to our team members. Employee satisfaction has improved significantly.",
 		highlight: "Better feedback culture",
 	},
 	{
@@ -41,7 +41,7 @@ const testimonials = [
 		company: "InnovateLab",
 		avatar: "DK",
 		rating: 5,
-		content: "Managing multiple projects across different teams has never been easier. XeTask's dashboard gives me a bird's eye view of everything happening in our organization. I can't imagine going back.",
+		content: "Managing multiple projects across different teams has never been easier. XeWorkspace's dashboard gives me a bird's eye view of everything happening in our organization. I can't imagine going back.",
 		highlight: "Complete visibility",
 	},
 	{
@@ -50,7 +50,7 @@ const testimonials = [
 		company: "Creative Agency",
 		avatar: "LT",
 		rating: 5,
-		content: "As a growing company, we needed a scalable solution. XeTask grows with us and the role-based permissions ensure everyone has access to what they need without compromising security.",
+		content: "As a growing company, we needed a scalable solution. XeWorkspace grows with us and the role-based permissions ensure everyone has access to what they need without compromising security.",
 		highlight: "Scales with growth",
 	},
 	{
@@ -93,7 +93,7 @@ export function TestimonialsSection() {
 						</span>
 					</h2>
 					<p className="text-lg text-muted-foreground">
-						Join thousands of satisfied teams who have transformed their workflow with XeTask.
+						Join thousands of satisfied teams who have transformed their workflow with XeWorkspace.
 					</p>
 				</motion.div>
 

@@ -8,12 +8,12 @@ export function DocFooter() {
 				<div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
 					<Link href="/" className="flex items-center gap-2">
 						<Wallet className="h-6 w-6" />
-						<span className="font-semibold">XeTask</span>
+						<span className="font-semibold">XeWorkspace</span>
 					</Link>
 					<p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
 						Built with Next.js and Tailwind CSS. The source code is available on{" "}
 						<a
-							href="https://github.com/yourusername/XeTask"
+							href="https://github.com/yourusername/XeWorkspace"
 							target="_blank"
 							rel="noreferrer"
 							className="font-medium underline underline-offset-4"

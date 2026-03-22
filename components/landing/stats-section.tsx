@@ -4,7 +4,7 @@ import { motion, useInView } from "framer-motion"
 import { useRef, useEffect, useState } from "react"
 
 const stats = [
-	{ value: 2000, suffix: "+", label: "Teams Using XeTask", description: "Active organizations" },
+	{ value: 2000, suffix: "+", label: "Teams Using XeWorkspace", description: "Active organizations" },
 	{ value: 50, suffix: "K+", label: "Tasks Completed", description: "Daily task completions" },
 	{ value: 99.9, suffix: "%", label: "Uptime Guaranteed", description: "Enterprise reliability" },
 	{ value: 4.9, suffix: "/5", label: "User Rating", description: "Based on 1,000+ reviews" },

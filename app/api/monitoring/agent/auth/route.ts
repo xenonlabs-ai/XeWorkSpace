@@ -1,28 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { randomBytes } from "crypto";
+import bcrypt from "bcryptjs";
 
 // POST /api/monitoring/agent/auth - Authenticate desktop agent
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, agentKey, deviceId } = body;
+    const { email, password, deviceId } = body;
 
-    if (!email || !agentKey || !deviceId) {
+    if (!email || !password || !deviceId) {
       return NextResponse.json(
-        { error: "Missing required fields: email, agentKey, deviceId" },
+        { error: "Missing required fields: email, password, deviceId" },
         { status: 400 }
       );
     }
 
-    // Find user by email
+    // Find user by email (include password for verification)
     const user = await prisma.user.findUnique({
       where: { email },
-      select: { id: true, firstName: true, lastName: true, role: true },
+      select: { id: true, firstName: true, lastName: true, role: true, password: true },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    if (!user || !user.password) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     // Check for existing active token for this device

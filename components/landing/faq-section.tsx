@@ -11,8 +11,8 @@ import { motion } from "framer-motion"
 
 const faqs = [
 	{
-		question: "What is XeTask and who is it for?",
-		answer: "XeTask is an all-in-one team management platform designed for businesses of all sizes. It helps managers and team leads track tasks, monitor attendance, conduct performance reviews, and analyze team productivity. Whether you're a startup with 5 people or an enterprise with hundreds of employees, XeTask scales to meet your needs.",
+		question: "What is XeWorkspace and who is it for?",
+		answer: "XeWorkspace is an all-in-one team management platform designed for businesses of all sizes. It helps managers and team leads track tasks, monitor attendance, conduct performance reviews, and analyze team productivity. Whether you're a startup with 5 people or an enterprise with hundreds of employees, XeWorkspace scales to meet your needs.",
 	},
 	{
 		question: "How does the free trial work?",
@@ -23,12 +23,12 @@ const faqs = [
 		answer: "Yes! You can upgrade or downgrade your plan at any time. When upgrading, you'll get immediate access to new features. When downgrading, the change takes effect at the end of your current billing cycle. We'll prorate any unused time if you've paid annually.",
 	},
 	{
-		question: "Is my data secure with XeTask?",
+		question: "Is my data secure with XeWorkspace?",
 		answer: "Absolutely. We take security seriously. All data is encrypted in transit and at rest using industry-standard AES-256 encryption. We're SOC 2 Type II certified, GDPR compliant, and conduct regular security audits. Enterprise plans also offer SSO, advanced access controls, and on-premise deployment options.",
 	},
 	{
-		question: "Does XeTask integrate with other tools?",
-		answer: "Yes! XeTask integrates with popular tools including Slack, Microsoft Teams, Google Workspace, Jira, GitHub, and many more. Our API also allows you to build custom integrations. Enterprise plans include access to our integration builder and dedicated support for custom integrations.",
+		question: "Does XeWorkspace integrate with other tools?",
+		answer: "Yes! XeWorkspace integrates with popular tools including Slack, Microsoft Teams, Google Workspace, Jira, GitHub, and many more. Our API also allows you to build custom integrations. Enterprise plans include access to our integration builder and dedicated support for custom integrations.",
 	},
 	{
 		question: "How does attendance tracking work?",
@@ -36,7 +36,7 @@ const faqs = [
 	},
 	{
 		question: "Can I customize performance review criteria?",
-		answer: "Yes! XeTask allows you to create custom performance review templates with your own criteria, rating scales, and questions. You can set up review cycles (quarterly, bi-annual, annual), 360-degree feedback, self-assessments, and goal tracking. All reviews are documented and easily accessible.",
+		answer: "Yes! XeWorkspace allows you to create custom performance review templates with your own criteria, rating scales, and questions. You can set up review cycles (quarterly, bi-annual, annual), 360-degree feedback, self-assessments, and goal tracking. All reviews are documented and easily accessible.",
 	},
 	{
 		question: "What kind of support do you offer?",
@@ -48,7 +48,7 @@ const faqs = [
 	},
 	{
 		question: "Is there a mobile app?",
-		answer: "Yes! XeTask is available on iOS and Android. Team members can check in/out, view and update tasks, communicate with team members, and receive notifications on the go. The mobile app syncs in real-time with the web application.",
+		answer: "Yes! XeWorkspace is available on iOS and Android. Team members can check in/out, view and update tasks, communicate with team members, and receive notifications on the go. The mobile app syncs in real-time with the web application.",
 	},
 ]
 
@@ -66,7 +66,7 @@ export function FAQSection() {
 						</span>
 					</h2>
 					<p className="text-lg text-muted-foreground">
-						Everything you need to know about XeTask. Can&apos;t find what you&apos;re looking for?{" "}
+						Everything you need to know about XeWorkspace. Can&apos;t find what you&apos;re looking for?{" "}
 						<a href="/contact" className="text-primary hover:underline">Contact us</a>.
 					</p>
 				</div>

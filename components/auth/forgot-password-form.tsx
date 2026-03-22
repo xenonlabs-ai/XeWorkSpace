@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
 						<Logo size="large" showText={false} />
 					</div>
 					<h2 className="mt-4 text-3xl font-semibold">Forgot Password</h2>
-					<p className="mt-2 text-muted-foreground">Reset your XeTask account password</p>
+					<p className="mt-2 text-muted-foreground">Reset your XeWorkspace account password</p>
 				</div>
 
 				<Card>

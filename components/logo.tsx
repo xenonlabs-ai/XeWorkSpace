@@ -15,8 +15,8 @@ export function Logo({
 	className = "",
 	size = "default",
 	showText = true,
-	firstPart = "Tas",
-	secondPart = "kify",
+	firstPart = "Xe",
+	secondPart = "Workspace",
 	href = "/",
 	onClick,
 }: LogoProps) {

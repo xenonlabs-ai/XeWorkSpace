@@ -21,7 +21,7 @@ class ApiClient {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: configStore.get('email'),
-          agentKey: configStore.get('agentKey'),
+          password: configStore.get('password'),
           deviceId: configStore.getDeviceId(),
         }),
       });
