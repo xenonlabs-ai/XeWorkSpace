@@ -29,7 +29,7 @@ interface StreamSession {
   userId: string;
   deviceName: string;
   userName: string;
-  status: "STREAMING" | "PAUSED" | "OFFLINE";
+  status: "STREAMING" | "ONLINE" | "IDLE" | "OFFLINE";
   lastFrame: string | null;
   lastUpdate: number;
   fps: number;
