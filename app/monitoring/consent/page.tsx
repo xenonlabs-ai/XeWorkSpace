@@ -104,31 +104,9 @@ export default function ConsentPage() {
     }
   };
 
-  const handleDownload = async (platform: "windows" | "mac" | "linux") => {
-    setIsDownloading(platform);
-    try {
-      const response = await fetch(`/api/downloads/agent?platform=${platform}`);
-      if (!response.ok) {
-        const error = await response.json();
-        setMessage({ type: "error", text: error.message || "Download failed" });
-        return;
-      }
-
-      // Get the blob and create download link
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || `XeWorkspace-Agent-${platform}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error: any) {
-      setMessage({ type: "error", text: error.message || "Download failed" });
-    } finally {
-      setIsDownloading(null);
-    }
+  const handleDownload = (platform: "windows" | "mac" | "linux") => {
+    // Open download URL directly - browser will handle the redirect and download
+    window.open(`/api/downloads/agent?platform=${platform}`, "_blank");
   };
 
   useEffect(() => {
