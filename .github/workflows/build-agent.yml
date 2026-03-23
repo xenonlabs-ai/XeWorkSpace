@@ -72,8 +72,7 @@ jobs:
           name: agent-${{ matrix.platform }}
           path: |
             xe-desktop-agent/release/${{ matrix.artifact }}
-            xe-desktop-agent/release/*.yml
-            xe-desktop-agent/release/*.blockmap
+            xe-desktop-agent/release/latest*.yml
           if-no-files-found: warn
 
   release:
@@ -115,14 +114,11 @@ jobs:
             You may see a SmartScreen warning. Click "More info" → "Run anyway" to proceed.
           files: |
             artifacts/agent-win/XeWorkspace-Agent-Setup.exe
-            artifacts/agent-win/*.yml
-            artifacts/agent-win/*.blockmap
+            artifacts/agent-win/latest.yml
             artifacts/agent-mac/XeWorkspace-Agent.dmg
-            artifacts/agent-mac/*.yml
-            artifacts/agent-mac/*.blockmap
-            artifacts/agent-mac/*.zip
+            artifacts/agent-mac/latest-mac.yml
             artifacts/agent-linux/XeWorkspace-Agent.AppImage
-            artifacts/agent-linux/*.yml
+            artifacts/agent-linux/latest-linux.yml
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
