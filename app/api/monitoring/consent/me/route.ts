@@ -29,19 +29,24 @@ export async function GET(request: NextRequest) {
       where: { userId },
     });
 
-    // Get connected devices (agent tokens)
-    const connectedDevices = await prisma.agentToken.findMany({
+    // Get connected devices from active sessions (with recent heartbeat)
+    // A device is considered "connected" if it has sent a heartbeat in the last 2 minutes
+    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+    const connectedDevices = await prisma.desktopSession.findMany({
       where: {
         userId,
-        isActive: true,
+        status: { not: "OFFLINE" },
+        lastActive: { gte: twoMinutesAgo },
       },
       select: {
         deviceId: true,
-        createdAt: true,
-        expiresAt: true,
+        deviceName: true,
+        status: true,
+        lastActive: true,
+        startedAt: true,
       },
       orderBy: {
-        createdAt: "desc",
+        lastActive: "desc",
       },
     });
 
@@ -78,11 +83,13 @@ export async function GET(request: NextRequest) {
       // Include setup code if still valid (for showing in UI)
       setupCode: hasValidSetupCode ? consent?.setupCode : null,
       setupCodeExpiresAt: hasValidSetupCode ? consent?.setupCodeExpiresAt : null,
-      // Include connected devices
+      // Include connected devices (only those with recent heartbeats)
       connectedDevices: connectedDevices.map((d) => ({
         deviceId: d.deviceId,
-        connectedAt: d.createdAt,
-        expiresAt: d.expiresAt,
+        deviceName: d.deviceName,
+        status: d.status,
+        connectedAt: d.startedAt,
+        lastActive: d.lastActive,
       })),
     });
   } catch (error) {

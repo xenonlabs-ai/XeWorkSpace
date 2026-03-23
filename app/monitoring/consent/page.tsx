@@ -38,8 +38,10 @@ import {
 
 interface ConnectedDevice {
   deviceId: string;
+  deviceName?: string;
+  status?: string;
   connectedAt: string;
-  expiresAt?: string;
+  lastActive?: string;
 }
 
 interface ConsentData {
@@ -117,8 +119,17 @@ export default function ConsentPage() {
 
     if (sessionStatus === "authenticated") {
       fetchConsentStatus();
+
+      // Auto-refresh connected devices every 30 seconds when monitoring is active
+      const interval = setInterval(() => {
+        if (consentData?.status === "ACTIVE") {
+          fetchConsentStatus();
+        }
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
-  }, [sessionStatus, router]);
+  }, [sessionStatus, router, consentData?.status]);
 
   const fetchConsentStatus = async () => {
     try {
@@ -545,19 +556,33 @@ export default function ConsentPage() {
                       {connectedDevices.map((device) => (
                         <div
                           key={device.deviceId}
-                          className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800"
+                          className={`flex items-center justify-between p-3 rounded-lg border ${
+                            device.status === "STREAMING"
+                              ? "bg-purple-50 dark:bg-purple-950/30 border-purple-200 dark:border-purple-800"
+                              : device.status === "IDLE"
+                              ? "bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800"
+                              : "bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800"
+                          }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <div className={`h-2 w-2 rounded-full animate-pulse ${
+                              device.status === "STREAMING" ? "bg-purple-500" :
+                              device.status === "IDLE" ? "bg-yellow-500" : "bg-green-500"
+                            }`} />
                             <div>
-                              <p className="text-sm font-medium">{device.deviceId}</p>
+                              <p className="text-sm font-medium">{device.deviceName || device.deviceId}</p>
                               <p className="text-xs text-muted-foreground">
-                                Connected: {new Date(device.connectedAt).toLocaleString()}
+                                Last active: {device.lastActive ? new Date(device.lastActive).toLocaleString() : new Date(device.connectedAt).toLocaleString()}
                               </p>
                             </div>
                           </div>
-                          <Badge variant="outline" className="text-green-600 border-green-300">
-                            Active
+                          <Badge variant="outline" className={
+                            device.status === "STREAMING" ? "text-purple-600 border-purple-300" :
+                            device.status === "IDLE" ? "text-yellow-600 border-yellow-300" :
+                            "text-green-600 border-green-300"
+                          }>
+                            {device.status === "STREAMING" ? "Streaming" :
+                             device.status === "IDLE" ? "Idle" : "Active"}
                           </Badge>
                         </div>
                       ))}

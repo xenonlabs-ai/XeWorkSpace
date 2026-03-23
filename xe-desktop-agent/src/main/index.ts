@@ -140,6 +140,14 @@ class DesktopAgent {
       }
     });
 
+    ipcMain.handle('get-device-info', () => {
+      return {
+        hostname: os.hostname(),
+        platform: os.platform(),
+        arch: os.arch(),
+      };
+    });
+
     // Config handlers
     ipcMain.handle('get-config', () => {
       return configStore.getAll();

@@ -418,6 +418,87 @@
       color: #ef4444;
       border: 1px solid #ef4444;
     }
+
+    /* Connected State Styles */
+    .connected-status {
+      text-align: center;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 100%);
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .connected-icon {
+      width: 70px;
+      height: 70px;
+      background: #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      font-size: 36px;
+      color: white;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .connected-status h2 {
+      font-size: 20px;
+      color: #34d399;
+      margin-bottom: 8px;
+    }
+
+    .connected-status p {
+      color: #a7f3d0;
+      font-size: 14px;
+    }
+
+    .connected-info {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid #334155;
+    }
+
+    .info-item:last-child {
+      border-bottom: none;
+    }
+
+    .info-item .label {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .info-item .value {
+      color: #e2e8f0;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .connected-badge {
+      background: #10b981;
+      color: white;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .connected-actions {
+      text-align: center;
+    }
+
+    .tray-hint {
+      color: #64748b;
+      font-size: 12px;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
@@ -482,7 +563,43 @@
       </div>
     </div>
   </div>
-  <div class="container">
+  <!-- Connected State View (shown when monitoring is active) -->
+  <div id="connectedView" class="container hidden">
+    <div class="header">
+      <h1>XeWorkspace Agent</h1>
+      <p>Desktop Monitoring</p>
+    </div>
+
+    <div class="connected-status">
+      <div class="connected-icon">✓</div>
+      <h2>Connected & Monitoring</h2>
+      <p id="connectedEmail">your.email@company.com</p>
+    </div>
+
+    <div class="connected-info">
+      <div class="info-item">
+        <span class="label">Status:</span>
+        <span class="value connected-badge" id="monitoringStatus">Active</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Device:</span>
+        <span class="value" id="deviceName">-</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Server:</span>
+        <span class="value" id="serverName">-</span>
+      </div>
+    </div>
+
+    <div class="connected-actions">
+      <button class="button button-secondary" onclick="window.close()">
+        Close Window
+      </button>
+      <p class="tray-hint">Agent continues running in system tray</p>
+    </div>
+  </div>
+
+  <div id="setupView" class="container">
     <div class="header">
       <h1>XeWorkspace Agent</h1>
       <p>Desktop Monitoring Configuration</p>
@@ -619,7 +736,7 @@
         Test Connection
       </button>
     </form>
-  </div>
+  </div><!-- end setupView -->
 
   <script>
     // Elements
@@ -879,6 +996,35 @@
       }
     });
 
+    // Connected view elements
+    const connectedView = document.getElementById('connectedView');
+    const setupView = document.getElementById('setupView');
+    const connectedEmail = document.getElementById('connectedEmail');
+    const monitoringStatus = document.getElementById('monitoringStatus');
+    const deviceName = document.getElementById('deviceName');
+    const serverName = document.getElementById('serverName');
+
+    function showConnectedView(email, serverUrl) {
+      setupView.classList.add('hidden');
+      connectedView.classList.remove('hidden');
+      connectedEmail.textContent = email;
+      serverName.textContent = new URL(serverUrl).hostname;
+
+      // Get device name
+      if (window.electronAPI && window.electronAPI.getDeviceInfo) {
+        window.electronAPI.getDeviceInfo().then(info => {
+          deviceName.textContent = info.hostname || 'Desktop';
+        });
+      } else {
+        deviceName.textContent = 'Desktop Agent';
+      }
+    }
+
+    function showSetupView() {
+      connectedView.classList.add('hidden');
+      setupView.classList.remove('hidden');
+    }
+
     // Load existing config
     async function loadConfig() {
       try {
@@ -902,9 +1048,18 @@
             // Update button states after loading config
             updateTestButtonState();
 
-            // If already has token, show as connected
+            // If already has token, check if monitoring is active
             if (config.token && config.email) {
-              showStatus('Connected as ' + config.email);
+              // Check consent status to determine if connected
+              try {
+                const status = await window.electronAPI.checkConsentStatus();
+                if (status && status.canMonitor) {
+                  showConnectedView(config.email, config.serverUrl);
+                  return;
+                }
+              } catch (e) {
+                console.error('Failed to check consent status:', e);
+              }
             }
           }
         }
@@ -941,8 +1096,13 @@
           const result = await window.electronAPI.submitConsent(true);
           if (result.success) {
             hideConsentDialog();
-            showStatus('Consent accepted! Monitoring is now active for ' + pendingEmail);
-            // Agent will start monitoring
+            // Show connected view
+            const serverUrl = quickServerUrlInput.value.trim() || serverUrlInput.value.trim();
+            showConnectedView(pendingEmail, serverUrl);
+            // Auto-close window after 3 seconds
+            setTimeout(() => {
+              window.close();
+            }, 3000);
           } else {
             showStatus('Failed to submit consent: ' + (result.error || 'Unknown error'), true);
           }
