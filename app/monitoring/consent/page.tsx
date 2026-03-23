@@ -31,8 +31,16 @@ import {
   MonitorSmartphone,
   Copy,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Wifi,
+  WifiOff
 } from "lucide-react";
+
+interface ConnectedDevice {
+  deviceId: string;
+  connectedAt: string;
+  expiresAt?: string;
+}
 
 interface ConsentData {
   status: "NOT_ENABLED" | "PENDING_EMPLOYEE" | "ACTIVE" | "REVOKED";
@@ -46,6 +54,7 @@ interface ConsentData {
     revokedBy?: string;
     revocationReason?: string;
   } | null;
+  connectedDevices?: ConnectedDevice[];
 }
 
 export default function ConsentPage() {
@@ -69,6 +78,7 @@ export default function ConsentPage() {
   const [setupCode, setSetupCode] = useState<string | null>(null);
   const [setupCodeExpiresAt, setSetupCodeExpiresAt] = useState<string | null>(null);
   const [isRegeneratingCode, setIsRegeneratingCode] = useState(false);
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([]);
 
   useEffect(() => {
     // Set server URL from current origin
@@ -141,6 +151,10 @@ export default function ConsentPage() {
       if (data.setupCode) {
         setSetupCode(data.setupCode);
         setSetupCodeExpiresAt(data.setupCodeExpiresAt);
+      }
+      // Capture connected devices
+      if (data.connectedDevices) {
+        setConnectedDevices(data.connectedDevices);
       }
     } catch (error) {
       console.error("Error fetching consent status:", error);
@@ -528,6 +542,53 @@ export default function ConsentPage() {
                           </>
                         )}
                       </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Connected Devices Section */}
+                <div className="rounded-xl border p-4 mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      {connectedDevices.length > 0 ? (
+                        <Wifi className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <WifiOff className="h-5 w-5 text-muted-foreground" />
+                      )}
+                      <h4 className="text-sm font-semibold">Connected Devices</h4>
+                    </div>
+                    <Badge variant={connectedDevices.length > 0 ? "default" : "secondary"}>
+                      {connectedDevices.length} {connectedDevices.length === 1 ? "device" : "devices"}
+                    </Badge>
+                  </div>
+
+                  {connectedDevices.length > 0 ? (
+                    <div className="space-y-2">
+                      {connectedDevices.map((device) => (
+                        <div
+                          key={device.deviceId}
+                          className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                            <div>
+                              <p className="text-sm font-medium">{device.deviceId}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Connected: {new Date(device.connectedAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-green-600 border-green-300">
+                            Active
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-muted-foreground">
+                      <WifiOff className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No devices connected yet</p>
+                      <p className="text-xs">Use the setup code above to connect your desktop agent</p>
                     </div>
                   )}
                 </div>

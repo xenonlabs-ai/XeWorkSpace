@@ -29,6 +29,22 @@ export async function GET(request: NextRequest) {
       where: { userId },
     });
 
+    // Get connected devices (agent tokens)
+    const connectedDevices = await prisma.agentToken.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      select: {
+        deviceId: true,
+        createdAt: true,
+        expiresAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
     // Determine status
     let status: "NOT_ENABLED" | "PENDING_EMPLOYEE" | "ACTIVE" | "REVOKED" = "NOT_ENABLED";
 
@@ -62,6 +78,12 @@ export async function GET(request: NextRequest) {
       // Include setup code if still valid (for showing in UI)
       setupCode: hasValidSetupCode ? consent?.setupCode : null,
       setupCodeExpiresAt: hasValidSetupCode ? consent?.setupCodeExpiresAt : null,
+      // Include connected devices
+      connectedDevices: connectedDevices.map((d) => ({
+        deviceId: d.deviceId,
+        connectedAt: d.createdAt,
+        expiresAt: d.expiresAt,
+      })),
     });
   } catch (error) {
     console.error("Error fetching consent status:", error);
