@@ -9,6 +9,7 @@ import { windowTracker } from '../capture/window-tracker';
 import { idleDetector } from '../capture/idle-detector';
 import { streamer } from '../capture/streamer';
 import { createTray, updateTrayTooltip, showSettingsWindow, destroyTray } from './tray';
+import { appUpdater } from './updater';
 
 class DesktopAgent {
   private isMonitoring: boolean = false;
@@ -493,6 +494,10 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     console.log('App is ready, initializing agent...');
+
+    // Initialize auto-updater
+    appUpdater.initialize();
+
     agent.initialize();
   });
 

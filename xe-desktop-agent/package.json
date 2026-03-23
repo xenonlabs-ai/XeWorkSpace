@@ -40,7 +40,12 @@
   "build": {
     "appId": "com.xeworkspace.desktop-agent",
     "productName": "XeWorkspace Agent",
-    "publish": null,
+    "publish": {
+      "provider": "github",
+      "owner": "xenonlabs-ai",
+      "repo": "XeWorkSpace",
+      "releaseType": "release"
+    },
     "directories": {
       "output": "release"
     },
