@@ -65,19 +65,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!consent.employeeConsented) {
-      return NextResponse.json(
-        { error: "You must accept the monitoring consent on the web portal first" },
-        { status: 403 }
-      );
-    }
-
     if (consent.revokedAt) {
       return NextResponse.json(
         { error: "Monitoring consent has been revoked" },
         { status: 403 }
       );
     }
+
+    // Note: We allow setup even if employeeConsented is false
+    // The agent will show a consent dialog and the user can accept there
+    const requiresConsent = !consent.employeeConsented;
 
     // Generate an agent token for this device
     const token = randomBytes(32).toString("hex");
@@ -118,6 +115,7 @@ export async function POST(request: NextRequest) {
     // Return configuration for the agent
     return NextResponse.json({
       success: true,
+      requiresConsent,
       config: {
         token: agentToken.token,
         userId: consent.user.id,
@@ -128,7 +126,9 @@ export async function POST(request: NextRequest) {
           lastName: consent.user.lastName,
         },
       },
-      message: "Agent configured successfully. Monitoring will start automatically.",
+      message: requiresConsent
+        ? "Agent configured. Please accept the monitoring consent to start."
+        : "Agent configured successfully. Monitoring will start automatically.",
     });
   } catch (error) {
     console.error("Error processing setup code:", error);

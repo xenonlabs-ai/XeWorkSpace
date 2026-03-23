@@ -114,23 +114,29 @@ class DesktopAgent {
   }
 
   private setupConsentHandlers(): void {
-    ipcMain.handle('submit-consent', async () => {
+    ipcMain.handle('submit-consent', async (_event, accepted: boolean) => {
       try {
-        const success = await apiClient.submitConsent('1.0');
-        return { success };
+        if (accepted) {
+          const success = await apiClient.submitConsent('1.0');
+          if (success) {
+            // Re-initialize to start monitoring after consent
+            setTimeout(() => this.reinitialize(), 1000);
+          }
+          return { success };
+        } else {
+          // User declined - clear config and stop
+          return { success: true, declined: true };
+        }
       } catch (error: any) {
         return { success: false, error: error.message };
       }
     });
 
-    ipcMain.handle('consent-complete', async (_event, accepted: boolean) => {
-      if (this.consentResolve) {
-        this.consentResolve(accepted);
-        this.consentResolve = null;
-      }
-      if (this.consentWindow) {
-        this.consentWindow.close();
-        this.consentWindow = null;
+    ipcMain.handle('check-consent-status', async () => {
+      try {
+        return await apiClient.checkConsentStatus();
+      } catch (error: any) {
+        return { status: 'ERROR', error: error.message };
       }
     });
 
@@ -183,8 +189,22 @@ class DesktopAgent {
       try {
         const result = await apiClient.setupWithCode(serverUrl, setupCode);
         if (result.success) {
-          // Re-initialize the agent after successful setup
-          setTimeout(() => this.reinitialize(), 1000);
+          // Check consent status after setup
+          const consentStatus = await apiClient.checkConsentStatus();
+
+          // If consent already given, start monitoring right away
+          if (consentStatus.canMonitor) {
+            setTimeout(() => this.reinitialize(), 1000);
+            return { ...result, requiresConsent: false };
+          }
+
+          // If admin enabled but employee hasn't consented, show consent dialog
+          if (consentStatus.adminEnabled && !consentStatus.employeeConsented) {
+            return { ...result, requiresConsent: true };
+          }
+
+          // Otherwise just return the result
+          return { ...result, requiresConsent: false };
         }
         return result;
       } catch (error: any) {

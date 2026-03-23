@@ -11,6 +11,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   setupWithCode: (serverUrl: string, setupCode: string) =>
     ipcRenderer.invoke('setup-with-code', serverUrl, setupCode),
   // Consent methods
-  submitConsent: () => ipcRenderer.invoke('submit-consent'),
-  consentComplete: (accepted: boolean) => ipcRenderer.invoke('consent-complete', accepted),
+  submitConsent: (accepted: boolean) => ipcRenderer.invoke('submit-consent', accepted),
+  checkConsentStatus: () => ipcRenderer.invoke('check-consent-status'),
 });

@@ -63,6 +63,7 @@ class ApiClient {
     success: boolean;
     error?: string;
     email?: string;
+    requiresConsent?: boolean;
   }> {
     try {
       const response = await fetch(`${serverUrl}/api/monitoring/agent/setup`, {
@@ -77,6 +78,7 @@ class ApiClient {
       const data = await response.json() as {
         success?: boolean;
         error?: string;
+        requiresConsent?: boolean;
         config?: {
           token: string;
           userId: string;
@@ -106,6 +108,7 @@ class ApiClient {
       return {
         success: true,
         email: config.email,
+        requiresConsent: data.requiresConsent,
       };
     } catch (error: any) {
       console.error('Setup with code error:', error);
