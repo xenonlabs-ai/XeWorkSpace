@@ -5,6 +5,10 @@
   "main": "out/main/index.js",
   "author": "XeWorkspace",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xenonlabs-ai/XeWorkSpace.git"
+  },
   "scripts": {
     "dev": "set ELECTRON_RUN_AS_NODE= && electron-vite dev",
     "build": "electron-vite build",
