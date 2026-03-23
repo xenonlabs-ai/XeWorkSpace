@@ -111,8 +111,17 @@ export async function POST(
           adminEnabled: action === "enable",
           adminEnabledBy: action === "enable" ? session.user.id : null,
           adminEnabledAt: action === "enable" ? new Date() : null,
-          revokedAt: action === "disable" ? new Date() : null,
-          revokedBy: action === "disable" ? "ADMIN" : null,
+          // When re-enabling, clear revocation and reset employee consent
+          ...(action === "enable" ? {
+            employeeConsented: false,
+            revokedAt: null,
+            revokedBy: null,
+            revocationReason: null,
+          } : {
+            revokedAt: new Date(),
+            revokedBy: "ADMIN",
+            revocationReason: "Disabled by administrator",
+          }),
         },
         create: {
           userId,
@@ -127,9 +136,9 @@ export async function POST(
         await prisma.notification.create({
           data: {
             userId,
-            title: "Monitoring Enabled",
+            title: "Monitoring Request",
             message:
-              "Your administrator has enabled desktop monitoring for your account. Please review and accept the terms in the desktop agent.",
+              "Your administrator has requested desktop monitoring for your account. Please review and accept the monitoring terms to proceed.",
             type: "system",
             actionUrl: "/monitoring/consent",
           },
