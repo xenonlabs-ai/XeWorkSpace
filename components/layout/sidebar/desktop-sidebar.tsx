@@ -1,6 +1,6 @@
 "use client";
 
-import navItems from "@/components/layout/navItems";
+import navItems, { type UserRole } from "@/components/layout/navItems";
 import { Logo } from "@/components/logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,10 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { NavigationItems } from "./navigation-items";
 import { QuickActions } from "./quick-actions";
 import { UserProfile } from "./user-profile";
@@ -30,6 +32,23 @@ interface DesktopSidebarProps {
 
 export function DesktopSidebar({ isCollapsed, direction = "ltr" }: DesktopSidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const userName = session?.user?.name || "User";
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase();
+
+  // Filter nav items based on user role
+  const filteredNavItems = useMemo(() => {
+    const userRole = (session?.user?.role as UserRole) || "MEMBER";
+    return navItems.filter((item) => {
+      if (!item.roles) return true;
+      return item.roles.includes(userRole);
+    });
+  }, [session?.user?.role]);
 
   const isActive = (path: string) => {
     if (path === "/" && pathname === "/") return true;
@@ -62,7 +81,7 @@ export function DesktopSidebar({ isCollapsed, direction = "ltr" }: DesktopSideba
             <ScrollArea className="h-[calc(100vh-400px)]">
               {isCollapsed ? (
                 <div className="grid gap-1">
-                  {navItems.map((item: any) => {
+                  {filteredNavItems.map((item) => {
                     const hasSubItems = item.subItems && item.subItems.length > 0;
 
                     if (hasSubItems) {
@@ -181,13 +200,13 @@ export function DesktopSidebar({ isCollapsed, direction = "ltr" }: DesktopSideba
                   className="h-10 w-10 rounded-full"
                 >
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src="/images/users/1.jpg" alt="User" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarImage src={session?.user?.image || "/images/users/1.jpg"} alt={userName} />
+                    <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side={direction === "rtl" ? "left" : "right"}>
-                John Doe
+                {userName}
               </TooltipContent>
             </Tooltip>
           ) : (

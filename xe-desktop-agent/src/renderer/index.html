@@ -97,8 +97,45 @@
       margin-top: 12px;
     }
 
-    .button-secondary:hover {
+    .button-secondary:hover:not(:disabled) {
       background: #1e293b;
+    }
+
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .button.loading {
+      position: relative;
+      color: transparent;
+    }
+
+    .button.loading::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      top: 50%;
+      left: 50%;
+      margin-left: -10px;
+      margin-top: -10px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .button-primary.loading::after {
+      border-top-color: white;
+    }
+
+    .button-secondary.loading::after {
+      border-top-color: #94a3b8;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .status {
@@ -165,6 +202,84 @@
     .hidden {
       display: none;
     }
+
+    .setup-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .setup-tab {
+      flex: 1;
+      padding: 12px 16px;
+      background: #1e293b;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      color: #94a3b8;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .setup-tab:hover {
+      border-color: #475569;
+    }
+
+    .setup-tab.active {
+      border-color: #3b82f6;
+      background: #1e3a5f;
+      color: #ffffff;
+    }
+
+    .setup-tab-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .setup-tab-desc {
+      font-size: 12px;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    .recommended-badge {
+      display: inline-block;
+      background: #22c55e;
+      color: white;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+      font-weight: 600;
+    }
+
+    .setup-code-input {
+      text-align: center;
+      font-size: 28px !important;
+      font-weight: 700;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      font-family: 'Courier New', monospace;
+    }
+
+    .setup-code-input::placeholder {
+      letter-spacing: 4px;
+      font-size: 16px !important;
+    }
+
+    .info-box {
+      background: #1e3a5f;
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .info-box strong {
+      color: #60a5fa;
+    }
   </style>
 </head>
 <body>
@@ -176,7 +291,61 @@
 
     <div id="status" class="status hidden"></div>
 
-    <form id="settingsForm">
+    <!-- Setup Method Tabs -->
+    <div class="setup-tabs">
+      <div class="setup-tab active" id="tabQuick" onclick="switchTab('quick')">
+        <div class="setup-tab-label">Quick Setup <span class="recommended-badge">Recommended</span></div>
+        <div class="setup-tab-desc">Use your 6-digit code</div>
+      </div>
+      <div class="setup-tab" id="tabManual" onclick="switchTab('manual')">
+        <div class="setup-tab-label">Manual Setup</div>
+        <div class="setup-tab-desc">Enter credentials</div>
+      </div>
+    </div>
+
+    <!-- Quick Setup Form (Setup Code) -->
+    <form id="quickSetupForm">
+      <div class="info-box">
+        <strong>How to get your setup code:</strong><br>
+        1. Accept the monitoring consent on the web app<br>
+        2. Copy the 6-character code shown after consent<br>
+        3. Enter it below to connect automatically
+      </div>
+
+      <div class="settings-section">
+        <h3>Enter Setup Code</h3>
+
+        <div class="form-group">
+          <label for="quickServerUrl">Server URL</label>
+          <input
+            type="url"
+            id="quickServerUrl"
+            placeholder="https://your-company.xeworkspace.com"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="setupCode">Setup Code</label>
+          <input
+            type="text"
+            id="setupCode"
+            class="setup-code-input"
+            placeholder="ABC123"
+            maxlength="6"
+            autocomplete="off"
+            required
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="button button-primary">
+        Connect with Code
+      </button>
+    </form>
+
+    <!-- Manual Setup Form (Email/Password) -->
+    <form id="manualSetupForm" class="hidden">
       <div class="settings-section">
         <h3>Server Connection</h3>
 
@@ -185,7 +354,7 @@
           <input
             type="url"
             id="serverUrl"
-            placeholder="http://localhost:3000"
+            placeholder="https://your-company.xeworkspace.com"
             required
           />
         </div>
@@ -254,13 +423,61 @@
   </div>
 
   <script>
-    // Range slider handlers
+    // Elements
     const captureInterval = document.getElementById('captureInterval');
     const captureIntervalValue = document.getElementById('captureIntervalValue');
     const idleThreshold = document.getElementById('idleThreshold');
     const idleThresholdValue = document.getElementById('idleThresholdValue');
     const statusDiv = document.getElementById('status');
+    const quickSetupForm = document.getElementById('quickSetupForm');
+    const manualSetupForm = document.getElementById('manualSetupForm');
+    const tabQuick = document.getElementById('tabQuick');
+    const tabManual = document.getElementById('tabManual');
+    const setupCodeInput = document.getElementById('setupCode');
+    const testBtn = document.getElementById('testBtn');
+    const serverUrlInput = document.getElementById('serverUrl');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
 
+    // Validate manual setup form and update Test Connection button state
+    function updateTestButtonState() {
+      const serverUrl = serverUrlInput.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      const isValid = serverUrl && email && password;
+      testBtn.disabled = !isValid;
+    }
+
+    // Add input listeners for real-time validation
+    serverUrlInput.addEventListener('input', updateTestButtonState);
+    emailInput.addEventListener('input', updateTestButtonState);
+    passwordInput.addEventListener('input', updateTestButtonState);
+
+    // Initialize button state
+    updateTestButtonState();
+
+    // Tab switching
+    function switchTab(tab) {
+      if (tab === 'quick') {
+        quickSetupForm.classList.remove('hidden');
+        manualSetupForm.classList.add('hidden');
+        tabQuick.classList.add('active');
+        tabManual.classList.remove('active');
+      } else {
+        quickSetupForm.classList.add('hidden');
+        manualSetupForm.classList.remove('hidden');
+        tabQuick.classList.remove('active');
+        tabManual.classList.add('active');
+      }
+    }
+
+    // Format setup code as user types (uppercase, no spaces)
+    setupCodeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+
+    // Range slider handlers
     captureInterval.addEventListener('input', (e) => {
       captureIntervalValue.textContent = e.target.value + ' min';
     });
@@ -275,17 +492,114 @@
       statusDiv.classList.remove('hidden');
     }
 
-    // Form submission
-    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+    // Quick Setup Form (Setup Code)
+    const quickServerUrlInput = document.getElementById('quickServerUrl');
+    const quickSubmitBtn = quickSetupForm.querySelector('button[type="submit"]');
+
+    quickSetupForm.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      const serverUrl = quickServerUrlInput.value.trim().replace(/\/$/, '');
+      const setupCode = setupCodeInput.value.trim();
+
+      // Validate server URL
+      if (!serverUrl) {
+        showStatus('Please enter the Server URL', true);
+        return;
+      }
+
+      try {
+        new URL(serverUrl);
+      } catch {
+        showStatus('Invalid Server URL. Use format: http://localhost:3000 or https://your-domain.com', true);
+        return;
+      }
+
+      if (setupCode.length !== 6) {
+        showStatus('Setup code must be 6 characters', true);
+        return;
+      }
+
+      // Show loading state
+      quickSubmitBtn.classList.add('loading');
+      quickSubmitBtn.disabled = true;
+      showStatus('Connecting with setup code...');
+
+      try {
+        if (window.electronAPI) {
+          const result = await window.electronAPI.setupWithCode(serverUrl, setupCode);
+          if (result.success) {
+            showStatus('Connected successfully! Setting up monitoring for ' + result.email);
+            // Window will close and agent will reinitialize
+          } else {
+            // Provide more helpful error messages
+            let errorMsg = result.error || 'Setup failed';
+            if (errorMsg.includes('Invalid setup code')) {
+              errorMsg = 'Invalid setup code. Please check the code and try again.';
+            } else if (errorMsg.includes('expired')) {
+              errorMsg = 'Setup code has expired. Please generate a new one from the web portal.';
+            } else if (errorMsg.includes('not been enabled')) {
+              errorMsg = 'Monitoring has not been enabled by your administrator. Contact your admin.';
+            } else if (errorMsg.includes('must accept')) {
+              errorMsg = 'You must accept the monitoring consent on the web portal first.';
+            } else if (errorMsg.includes('fetch') || errorMsg.includes('ECONNREFUSED')) {
+              errorMsg = 'Cannot reach server. Check the Server URL and ensure the server is running.';
+            }
+            showStatus(errorMsg, true);
+          }
+        } else {
+          showStatus('Running outside Electron environment.');
+        }
+      } catch (error) {
+        showStatus('Setup failed: ' + error.message, true);
+      } finally {
+        // Remove loading state
+        quickSubmitBtn.classList.remove('loading');
+        quickSubmitBtn.disabled = false;
+      }
+    });
+
+    // Manual Setup Form (Email/Password)
+    const manualSubmitBtn = manualSetupForm.querySelector('button[type="submit"]');
+
+    manualSetupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const serverUrl = serverUrlInput.value.trim().replace(/\/$/, '');
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      // Validate all fields
+      const missingFields = [];
+      if (!serverUrl) missingFields.push('Server URL');
+      if (!email) missingFields.push('Email');
+      if (!password) missingFields.push('Password');
+
+      if (missingFields.length > 0) {
+        showStatus('Please fill in: ' + missingFields.join(', '), true);
+        return;
+      }
+
+      // Validate URL format
+      try {
+        new URL(serverUrl);
+      } catch {
+        showStatus('Invalid Server URL. Use format: http://localhost:3000 or https://your-domain.com', true);
+        return;
+      }
+
       const config = {
-        serverUrl: document.getElementById('serverUrl').value,
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value,
+        serverUrl,
+        email,
+        password,
         captureInterval: parseInt(captureInterval.value),
         idleThreshold: parseInt(idleThreshold.value) * 60, // Convert to seconds
       };
+
+      // Show loading state
+      manualSubmitBtn.classList.add('loading');
+      manualSubmitBtn.disabled = true;
+      showStatus('Saving settings and connecting...');
 
       try {
         if (window.electronAPI) {
@@ -296,30 +610,69 @@
         }
       } catch (error) {
         showStatus('Failed to save settings: ' + error.message, true);
+      } finally {
+        // Remove loading state
+        manualSubmitBtn.classList.remove('loading');
+        manualSubmitBtn.disabled = false;
       }
     });
 
-    // Test connection
-    document.getElementById('testBtn').addEventListener('click', async () => {
-      const config = {
-        serverUrl: document.getElementById('serverUrl').value,
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value,
-      };
+    // Test connection (manual setup)
+    testBtn.addEventListener('click', async () => {
+      const serverUrl = serverUrlInput.value.trim().replace(/\/$/, '');
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
+
+      // Validate all fields before testing
+      const missingFields = [];
+      if (!serverUrl) missingFields.push('Server URL');
+      if (!email) missingFields.push('Email');
+      if (!password) missingFields.push('Password');
+
+      if (missingFields.length > 0) {
+        showStatus('Please fill in: ' + missingFields.join(', '), true);
+        return;
+      }
+
+      // Validate URL format
+      try {
+        new URL(serverUrl);
+      } catch {
+        showStatus('Invalid Server URL. Use format: http://localhost:3000 or https://your-domain.com', true);
+        return;
+      }
+
+      const config = { serverUrl, email, password };
+
+      // Show loading state
+      testBtn.classList.add('loading');
+      testBtn.disabled = true;
+      showStatus('Testing connection...');
 
       try {
         if (window.electronAPI) {
           const result = await window.electronAPI.testConnection(config);
           if (result.success) {
-            showStatus('Connection successful!');
+            showStatus('Connection successful! Credentials are valid.');
           } else {
-            showStatus('Connection failed: ' + result.error, true);
+            // Provide more helpful error messages
+            let errorMsg = result.error || 'Connection failed';
+            if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
+              errorMsg = 'Cannot reach server. Check the Server URL and ensure the server is running.';
+            } else if (errorMsg.includes('Invalid credentials')) {
+              errorMsg = 'Invalid email or password. Please check your credentials.';
+            }
+            showStatus(errorMsg, true);
           }
         } else {
           showStatus('Testing connection to: ' + config.serverUrl);
         }
       } catch (error) {
         showStatus('Connection test failed: ' + error.message, true);
+      } finally {
+        // Remove loading state
+        testBtn.classList.remove('loading');
+        updateTestButtonState();
       }
     });
 
@@ -329,13 +682,27 @@
         if (window.electronAPI) {
           const config = await window.electronAPI.getConfig();
           if (config) {
-            document.getElementById('serverUrl').value = config.serverUrl || '';
-            document.getElementById('email').value = config.email || '';
-            document.getElementById('password').value = config.password || '';
+            // Set server URL in both forms
+            serverUrlInput.value = config.serverUrl || '';
+            quickServerUrlInput.value = config.serverUrl || '';
+
+            // Set credentials for manual form
+            emailInput.value = config.email || '';
+            passwordInput.value = config.password || '';
+
+            // Set capture settings
             captureInterval.value = config.captureInterval || 2;
             captureIntervalValue.textContent = (config.captureInterval || 2) + ' min';
             idleThreshold.value = Math.floor((config.idleThreshold || 300) / 60);
             idleThresholdValue.textContent = Math.floor((config.idleThreshold || 300) / 60) + ' min';
+
+            // Update button states after loading config
+            updateTestButtonState();
+
+            // If already has token, show as connected
+            if (config.token && config.email) {
+              showStatus('Connected as ' + config.email);
+            }
           }
         }
       } catch (error) {

@@ -2,48 +2,48 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Target } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+
+interface Goal {
+  id: string;
+  name: string;
+  target: string;
+  current: string;
+  progress: number;
+  status: "on-track" | "at-risk" | "behind";
+  dueDate: string;
+}
 
 export function GoalTracking() {
-  const goals = [
-    {
-      id: 1,
-      name: "Increase Team Productivity",
-      target: "90%",
-      current: "87%",
-      progress: 87,
-      status: "on-track",
-      dueDate: "Jun 30, 2025",
-    },
-    {
-      id: 2,
-      name: "Reduce Task Completion Time",
-      target: "2 days",
-      current: "2.4 days",
-      progress: 75,
-      status: "at-risk",
-      dueDate: "Jul 15, 2025",
-    },
-    {
-      id: 3,
-      name: "Improve Code Quality Score",
-      target: "95%",
-      current: "92%",
-      progress: 92,
-      status: "on-track",
-      dueDate: "Jun 15, 2025",
-    },
-    {
-      id: 4,
-      name: "Complete Project Milestones",
-      target: "100%",
-      current: "65%",
-      progress: 65,
-      status: "on-track",
-      dueDate: "Aug 1, 2025",
-    },
-  ];
+  const { data: session } = useSession();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const response = await fetch("/api/performance/goals");
+        if (response.ok) {
+          const data = await response.json();
+          setGoals(data.goals || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch goals:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchGoals();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
 
   const getStatusProps = (status: string) => {
     switch (status) {
@@ -63,6 +63,48 @@ export function GoalTracking() {
         return { color: "gray", icon: null };
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Goal Tracking</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="p-4 border rounded-lg space-y-4">
+                <div className="flex items-start gap-2">
+                  <Skeleton className="h-12 w-12 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-1/2" />
+                    <Skeleton className="h-3 w-3/4" />
+                  </div>
+                </div>
+                <Skeleton className="h-2 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (goals.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Goal Tracking</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Target className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No goals available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

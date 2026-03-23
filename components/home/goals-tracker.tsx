@@ -1,39 +1,22 @@
-
+"use client";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertTriangle, CheckCircle2, Clock, Target } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
-const companyGoals = [
-  {
-    id: 1,
-    title: "Increase Revenue by 20%",
-    progress: 65,
-    status: "on-track",
-    dueDate: "Dec 31, 2025",
-    owner: "Finance Team",
-    category: "Financial",
-  },
-  {
-    id: 3,
-    title: "Reduce Customer Churn by 5%",
-    progress: 35,
-    status: "at-risk",
-    dueDate: "Oct 1, 2025",
-    owner: "Customer Success",
-    category: "Customer",
-  },
-  {
-    id: 4,
-    title: "Implement New CRM System",
-    progress: 90,
-    status: "completed",
-    dueDate: "Jun 30, 2025",
-    owner: "IT Department",
-    category: "Operations",
-  },
-];
+interface Goal {
+  id: string;
+  title: string;
+  progress: number;
+  status: "completed" | "on-track" | "at-risk" | "pending";
+  dueDate: string;
+  owner: string;
+  category: string;
+}
 
 const getStatus = (status: string) => {
   switch (status) {
@@ -65,6 +48,70 @@ const getStatus = (status: string) => {
 };
 
 export function GoalsTracker() {
+  const { data: session } = useSession();
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGoals = async () => {
+      try {
+        const response = await fetch("/api/goals");
+        if (response.ok) {
+          const data = await response.json();
+          setGoals(data.goals || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch goals:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchGoals();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Goals Tracker</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-xl border p-4">
+              <div className="flex justify-between mb-2">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+              <Skeleton className="h-3 w-1/2 mb-3" />
+              <Skeleton className="h-2 w-full" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (goals.length === 0) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Goals Tracker</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Target className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No goals set yet</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -72,7 +119,7 @@ export function GoalsTracker() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {companyGoals.map((goal) => {
+        {goals.map((goal) => {
           const status = getStatus(goal.status);
 
           return (
@@ -80,10 +127,7 @@ export function GoalsTracker() {
               key={goal.id}
               className="relative overflow-hidden rounded-xl border bg-linear-to-r from-background to-muted/50 p-4"
             >
-              {/* Responsive header */}
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 mb-2">
-                
-                {/* Title + owner */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h4 className="font-medium text-[15px] truncate max-w-[200px] sm:max-w-full">
@@ -102,7 +146,6 @@ export function GoalsTracker() {
                   </p>
                 </div>
 
-                {/* Status Badge */}
                 <Badge
                   variant="outline"
                   className={`flex items-center gap-1 text-xs px-2 py-1 border whitespace-nowrap self-start sm:self-auto ${status.color}`}
@@ -112,7 +155,6 @@ export function GoalsTracker() {
                 </Badge>
               </div>
 
-              {/* Progress row */}
               <div className="flex items-center gap-3 mt-1">
                 <Progress
                   value={goal.progress}

@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageSquare, User } from "lucide-react";
+import { MessageSquare, Monitor, MonitorOff, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type Member = {
@@ -22,14 +33,24 @@ type Member = {
   accessLevel?: string;
   email?: string;
   skills?: string[];
+  monitoringStatus?: "NOT_ENABLED" | "PENDING_EMPLOYEE" | "ACTIVE" | "REVOKED";
 };
 
 interface MemberCardProps {
   member: Member;
   onClick?: () => void;
+  isAdminOrOwner?: boolean;
+  onToggleMonitoring?: (memberId: string | number) => void;
+  onDeleteMember?: (memberId: string | number) => void;
 }
 
-export function MemberCard({ member, onClick }: MemberCardProps) {
+export function MemberCard({
+  member,
+  onClick,
+  isAdminOrOwner = false,
+  onToggleMonitoring,
+  onDeleteMember,
+}: MemberCardProps) {
   const router = useRouter();
 
   // Construct image path dynamically (e.g. /images/users/1.jpg)
@@ -38,6 +59,11 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
     member.avatar && !member.avatar.startsWith("http")
       ? `/images/users/${member.id}.jpg`
       : member.avatar || `/images/users/1.jpg`;
+
+  const isMonitoringEnabled =
+    member.monitoringStatus === "ACTIVE" ||
+    member.monitoringStatus === "PENDING_EMPLOYEE";
+  const canDelete = isAdminOrOwner && member.accessLevel !== "Owner";
 
   return (
     <Card
@@ -62,7 +88,7 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
             <CardTitle className="text-lg font-semibold">
               {member.name}
             </CardTitle>
-            <CardDescription className="flex items-center gap-2 mt-0.5 text-sm">
+            <CardDescription className="flex items-center gap-2 mt-0.5 text-sm flex-wrap">
               <span>{member.role}</span>
               {member.status && (
                 <Badge
@@ -74,6 +100,24 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
                   }`}
                 >
                   {member.status}
+                </Badge>
+              )}
+              {member.monitoringStatus && member.monitoringStatus !== "NOT_ENABLED" && (
+                <Badge
+                  variant="outline"
+                  className={`px-2 py-0.5 text-xs rounded-full ${
+                    member.monitoringStatus === "ACTIVE"
+                      ? "border-blue-400 text-blue-600 bg-blue-50"
+                      : member.monitoringStatus === "PENDING_EMPLOYEE"
+                      ? "border-yellow-400 text-yellow-600 bg-yellow-50"
+                      : "border-red-400 text-red-600 bg-red-50"
+                  }`}
+                >
+                  {member.monitoringStatus === "ACTIVE"
+                    ? "Monitored"
+                    : member.monitoringStatus === "PENDING_EMPLOYEE"
+                    ? "Pending Consent"
+                    : "Revoked"}
                 </Badge>
               )}
             </CardDescription>
@@ -142,6 +186,70 @@ export function MemberCard({ member, onClick }: MemberCardProps) {
               Message
             </Button>
           </div>
+
+          {/* Admin Actions: Monitoring & Delete */}
+          {isAdminOrOwner && (
+            <div className="pt-3 flex gap-2 border-t mt-3">
+              <Button
+                variant={isMonitoringEnabled ? "outline" : "default"}
+                size="sm"
+                className={`flex-1 gap-2 text-sm font-medium ${
+                  isMonitoringEnabled
+                    ? "text-orange-600 border-orange-300 hover:bg-orange-50"
+                    : ""
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleMonitoring?.(member.id);
+                }}
+              >
+                {isMonitoringEnabled ? (
+                  <>
+                    <MonitorOff className="h-4 w-4" />
+                    Disable Monitoring
+                  </>
+                ) : (
+                  <>
+                    <Monitor className="h-4 w-4" />
+                    Enable Monitoring
+                  </>
+                )}
+              </Button>
+
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Remove Employee</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will remove <strong>{member.name}</strong> from your
+                        organization. This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => onDeleteMember?.(member.id)}
+                      >
+                        Remove Employee
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

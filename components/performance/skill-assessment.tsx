@@ -1,28 +1,50 @@
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Award } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 type Skill = {
   name: string;
   score: number;
 };
 
-export function SkillAssessment() {
-  const technicalSkills: Skill[] = [
-    { name: "JavaScript", score: 85 },
-    { name: "React", score: 90 },
-    { name: "Node.js", score: 75 },
-    { name: "TypeScript", score: 80 },
-    { name: "CSS/SCSS", score: 88 },
-  ];
+interface SkillData {
+  technicalSkills: Skill[];
+  softSkills: Skill[];
+  technicalAnalysis: string;
+  softAnalysis: string;
+}
 
-  const softSkills: Skill[] = [
-    { name: "Communication", score: 92 },
-    { name: "Teamwork", score: 88 },
-    { name: "Problem Solving", score: 85 },
-    { name: "Time Management", score: 78 },
-    { name: "Leadership", score: 82 },
-  ];
+export function SkillAssessment() {
+  const { data: session } = useSession();
+  const [data, setData] = useState<SkillData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const response = await fetch("/api/performance/skills");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+        }
+      } catch (error) {
+        console.error("Failed to fetch skills:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchSkills();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
 
   const getScoreColor = (score: number): string => {
     if (score >= 90) return "bg-emerald-500";
@@ -32,7 +54,7 @@ export function SkillAssessment() {
     return "bg-red-400";
   };
 
-  const renderSkillBars = (skills: Skill[], type: "technical" | "soft") => (
+  const renderSkillBars = (skills: Skill[], analysis: string) => (
     <div className="space-y-5">
       {skills.map((skill) => (
         <div key={skill.name} className="space-y-1.5 group">
@@ -42,7 +64,6 @@ export function SkillAssessment() {
           </div>
 
           <div className="relative h-3 bg-muted/50 rounded-full overflow-hidden">
-            {/* Animated width using CSS transition */}
             <div
               className={`h-3 rounded-full ${getScoreColor(
                 skill.score
@@ -50,7 +71,6 @@ export function SkillAssessment() {
               style={{ width: `${skill.score}%` }}
               aria-hidden
             />
-            {/* Tooltip bubble on hover */}
             <div className="absolute inset-0 flex items-center justify-end pr-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
               <div className="bg-popover text-popover-foreground text-xs rounded px-2 py-0.5 border border-border/50">
                 {skill.score}%
@@ -65,13 +85,55 @@ export function SkillAssessment() {
           Skill Gap Analysis
         </h4>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          {type === "technical"
-            ? "The team shows strong proficiency in React and CSS/SCSS. Consider additional training in Node.js to enhance backend capabilities."
-            : "The team excels in communication and teamwork. Time management can be improved through workshops and structured project planning."}
+          {analysis}
         </p>
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <Card className="border border-border/50 shadow-none bg-background">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">
+            Skill Assessment
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-full mb-6" />
+          <div className="space-y-5">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="space-y-1.5">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+                <Skeleton className="h-3 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || (data.technicalSkills.length === 0 && data.softSkills.length === 0)) {
+    return (
+      <Card className="border border-border/50 shadow-none bg-background">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">
+            Skill Assessment
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Award className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No skill data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border/50 shadow-none bg-background">
@@ -98,11 +160,11 @@ export function SkillAssessment() {
           </TabsList>
 
           <TabsContent value="technical" className="mt-0">
-            {renderSkillBars(technicalSkills, "technical")}
+            {renderSkillBars(data.technicalSkills, data.technicalAnalysis)}
           </TabsContent>
 
           <TabsContent value="soft" className="mt-0">
-            {renderSkillBars(softSkills, "soft")}
+            {renderSkillBars(data.softSkills, data.softAnalysis)}
           </TabsContent>
         </Tabs>
       </CardContent>

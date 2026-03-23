@@ -1,8 +1,11 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { BarChart3 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -18,93 +21,90 @@ import {
   YAxis,
 } from "recharts";
 
-const taskData = [
-  {
-    month: "Jan",
-    productivity: 35,
-    tasksCompleted: 70,
-    totalTasks: 100,
-    attendance: 90,
-    quality: 80,
-  },
-  {
-    month: "Feb",
-    productivity: 40,
-    tasksCompleted: 60,
-    totalTasks: 80,
-    attendance: 85,
-    quality: 75,
-  },
-  {
-    month: "Mar",
-    productivity: 30,
-    tasksCompleted: 50,
-    totalTasks: 70,
-    attendance: 95,
-    quality: 78,
-  },
-  {
-    month: "Apr",
-    productivity: 45,
-    tasksCompleted: 80,
-    totalTasks: 90,
-    attendance: 88,
-    quality: 82,
-  },
-  {
-    month: "May",
-    productivity: 50,
-    tasksCompleted: 90,
-    totalTasks: 100,
-    attendance: 92,
-    quality: 85,
-  },
-  {
-    month: "Jun",
-    productivity: 38,
-    tasksCompleted: 65,
-    totalTasks: 85,
-    attendance: 87,
-    quality: 80,
-  },
-  {
-    month: "Jul",
-    productivity: 42,
-    tasksCompleted: 75,
-    totalTasks: 95,
-    attendance: 91,
-    quality: 83,
-  },
-  {
-    month: "Aug",
-    productivity: 48,
-    tasksCompleted: 85,
-    totalTasks: 100,
-    attendance: 89,
-    quality: 86,
-  },
-  {
-    month: "Sep",
-    productivity: 36,
-    tasksCompleted: 60,
-    totalTasks: 80,
-    attendance: 86,
-    quality: 79,
-  },
-];
+interface TaskDataPoint {
+  month: string;
+  productivity: number;
+  tasksCompleted: number;
+  totalTasks: number;
+  attendance: number;
+  quality: number;
+}
+
+interface PieDataPoint {
+  name: string;
+  value: number;
+  color: string;
+  [key: string]: string | number;
+}
+
+interface VisualizationData {
+  taskData: TaskDataPoint[];
+  pieData: PieDataPoint[];
+  attendancePercentage: number;
+}
 
 const barColors = {
   tasksCompleted: "var(--chart-2)",
   totalTasks: "var(--chart-5)",
 };
 
-const pieData = [
-  { name: "Present", value: 90, color: "var(--primary)" },
-  { name: "Absent", value: 10, color: "#f59e0b" },
-];
-
 export function ReportVisualization() {
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("line");
+  const [data, setData] = useState<VisualizationData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/reports/visualization");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+        }
+      } catch (error) {
+        console.error("Failed to fetch visualization data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Management Reports</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-48 mb-4" />
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!data || (data.taskData.length === 0 && data.pieData.length === 0)) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Task Management Reports</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-[300px] text-center">
+            <BarChart3 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No report data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -129,7 +129,7 @@ export function ReportVisualization() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
-                  data={taskData}
+                  data={data.taskData}
                   margin={{ top: 10, right: 10, bottom: 10, left: -50 }}
                 >
                   <defs>
@@ -182,7 +182,7 @@ export function ReportVisualization() {
             >
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={taskData}
+                  data={data.taskData}
                   margin={{ top: 10, right: 10, bottom: 10, left: -50 }}
                   barCategoryGap={16}
                   barGap={2}
@@ -226,7 +226,7 @@ export function ReportVisualization() {
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
-                      data={pieData}
+                      data={data.pieData}
                       dataKey="value"
                       nameKey="name"
                       cx="50%"
@@ -236,7 +236,7 @@ export function ReportVisualization() {
                       paddingAngle={2}
                       label
                     >
-                      {pieData.map((entry, index) => (
+                      {data.pieData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
@@ -249,7 +249,7 @@ export function ReportVisualization() {
                     />
                   </PieChart>
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-xl font-bold">90%</span>
+                    <span className="text-xl font-bold">{data.attendancePercentage}%</span>
                     <span className="text-sm text-muted-foreground">
                       Attendance
                     </span>

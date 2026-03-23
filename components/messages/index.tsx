@@ -2,125 +2,65 @@
 
 import type { Conversation, Message } from "@/components/types/chat";
 import { useMobile } from "@/hooks/use-mobile";
-import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { ChatWindow } from "./chat-window";
 import { ConversationsList } from "./conversations-list";
+import { MessageSquare } from "lucide-react";
 
 export function MessagesContent() {
-  const conversationsData: Conversation[] = [
-    {
-      id: 1,
-      name: "Team Jhon",
-      avatar: "1",
-      unread: 3,
-      lastMessage: "Meeting notes yesterday",
-      time: "10:45 AM",
-      isActive: true,
-      online: true,
-      members: 8,
-      membersOnline: 3,
-    },
-    {
-      id: 2,
-      name: "Dan Alpha",
-      avatar: "2",
-      unread: 0,
-      lastMessage: "Updated the design files",
-      time: "Yesterday",
-      isActive: false,
-      online: false,
-      members: 5,
-      membersOnline: 2,
-    },
-    {
-      id: 3,
-      name: "Marketing T",
-      avatar: "3",
-      unread: 1,
-      lastMessage: "Campaign results are in!",
-      time: "Yesterday",
-      isActive: false,
-      online: true,
-      members: 4,
-      membersOnline: 1,
-    },
-    {
-      id: 4,
-      name: "John Smith",
-      avatar: "4",
-      unread: 0,
-      lastMessage: "Can we discuss the proposal?",
-      time: "Monday",
-      isActive: false,
-      online: true,
-      isDirect: true,
-    },
-    {
-      id: 5,
-      name: "Sarah Polin",
-      avatar: "5",
-      unread: 0,
-      lastMessage: "Thanks for your help!",
-      time: "Monday",
-      isActive: false,
-      online: false,
-      isDirect: true,
-    },
-    {
-      id: 6,
-      name: "Tech Support",
-      avatar: "6",
-      unread: 0,
-      lastMessage: "Your ticket has been resolved",
-      time: "Last week",
-      isActive: false,
-      online: true,
-      members: 3,
-      membersOnline: 2,
-    },
-  ];
+  const { data: session } = useSession();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const messagesData: Message[] = [
-    {
-      id: 1,
-      sender: "Jane Doe",
-      avatar: "1",
-      content: "Good morning team!",
-      time: "9:30 AM",
-      isMe: false,
-      status: "read",
-    },
-    {
-      id: 2,
-      sender: "Me",
-      avatar: "me",
-      content: "I'll be joining a few minutes late.",
-      time: "9:35 AM",
-      isMe: true,
-      status: "delivered",
-    },
-    {
-      id: 3,
-      sender: "John Smith",
-      avatar: "2",
-      content: "Thanks for the reminder.",
-      time: "9:32 AM",
-      isMe: false,
-      status: "read",
-    },
-    // ... other messages
-  ];
-
-  const [conversations, setConversations] = useState(conversationsData);
-  const [messages, setMessages] = useState(messagesData);
-  const [activeConversation, setActiveConversation] = useState(
-    conversationsData[0]
-  );
-
-  const [mobileView, setMobileView] = useState<"conversations" | "chat">(
-    "conversations"
-  );
+  const [mobileView, setMobileView] = useState<"conversations" | "chat">("conversations");
   const isMobile = useMobile();
+
+  // Fetch conversations from API
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch("/api/messages/conversations");
+        if (response.ok) {
+          const data = await response.json();
+          setConversations(data.conversations || []);
+          if (data.conversations?.length > 0) {
+            setActiveConversation(data.conversations[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch conversations:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchConversations();
+    }
+  }, [session]);
+
+  // Fetch messages for active conversation
+  useEffect(() => {
+    const fetchMessages = async () => {
+      if (!activeConversation) return;
+
+      try {
+        const response = await fetch(`/api/messages/conversations/${activeConversation.id}/messages`);
+        if (response.ok) {
+          const data = await response.json();
+          setMessages(data.messages || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+      }
+    };
+
+    fetchMessages();
+  }, [activeConversation]);
 
   const handleSelectConversation = (conversation: Conversation) => {
     setConversations(
@@ -136,10 +76,12 @@ export function MessagesContent() {
 
   const handleBackToList = () => setMobileView("conversations");
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
+    if (!activeConversation) return;
+
     const newMessage: Message = {
-      id: messages.length + 1,
-      sender: "Me",
+      id: Date.now(),
+      sender: session?.user?.name || "Me",
       avatar: "me",
       content,
       time: new Date().toLocaleTimeString([], {
@@ -149,26 +91,63 @@ export function MessagesContent() {
       isMe: true,
       status: "sending",
     };
+
     setMessages((prev) => [...prev, newMessage]);
-    setTimeout(
-      () =>
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === newMessage.id ? { ...m, status: "sent" } : m
-          )
-        ),
-      500
-    );
-    setTimeout(
-      () =>
+
+    try {
+      const response = await fetch(`/api/messages/conversations/${activeConversation.id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+
+      if (response.ok) {
         setMessages((prev) =>
           prev.map((m) =>
             m.id === newMessage.id ? { ...m, status: "delivered" } : m
           )
-        ),
-      1500
-    );
+        );
+      } else {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === newMessage.id ? { ...m, status: "failed" } : m
+          )
+        );
+      }
+    } catch (error) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === newMessage.id ? { ...m, status: "failed" } : m
+        )
+      );
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+        <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (conversations.length === 0) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold tracking-tight">Messages</h1>
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center">
+          <MessageSquare className="h-16 w-16 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">No conversations yet</h2>
+          <p className="text-muted-foreground max-w-md">
+            Start a conversation with a team member to begin messaging.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -186,7 +165,7 @@ export function MessagesContent() {
         )}
 
         {/* Show chat window */}
-        {(!isMobile || mobileView === "chat") && (
+        {(!isMobile || mobileView === "chat") && activeConversation && (
           <ChatWindow
             conversation={activeConversation}
             messages={messages}

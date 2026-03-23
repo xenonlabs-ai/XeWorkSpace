@@ -24,7 +24,14 @@ import {
   AlertTriangle,
   CheckCircle2,
   XCircle,
-  Info
+  Info,
+  Download,
+  Laptop,
+  MonitorDown,
+  MonitorSmartphone,
+  Copy,
+  RefreshCw,
+  Sparkles
 } from "lucide-react";
 
 interface ConsentData {
@@ -51,6 +58,68 @@ export default function ConsentPage() {
   const [revokeDialogOpen, setRevokeDialogOpen] = useState(false);
   const [revokeReason, setRevokeReason] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [agentDownloadDialogOpen, setAgentDownloadDialogOpen] = useState(false);
+  const [serverUrl, setServerUrl] = useState("");
+  const [agentAvailability, setAgentAvailability] = useState<{
+    windows: { available: boolean; label: string };
+    mac: { available: boolean; label: string };
+    linux: { available: boolean; label: string };
+  } | null>(null);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
+  const [setupCode, setSetupCode] = useState<string | null>(null);
+  const [setupCodeExpiresAt, setSetupCodeExpiresAt] = useState<string | null>(null);
+  const [isRegeneratingCode, setIsRegeneratingCode] = useState(false);
+
+  useEffect(() => {
+    // Set server URL from current origin
+    setServerUrl(window.location.origin);
+  }, []);
+
+  // Check agent availability when dialog opens
+  useEffect(() => {
+    if (agentDownloadDialogOpen) {
+      checkAgentAvailability();
+    }
+  }, [agentDownloadDialogOpen]);
+
+  const checkAgentAvailability = async () => {
+    try {
+      const response = await fetch("/api/downloads/agent/status");
+      if (response.ok) {
+        const data = await response.json();
+        setAgentAvailability(data.availability);
+      }
+    } catch (error) {
+      console.error("Failed to check agent availability:", error);
+    }
+  };
+
+  const handleDownload = async (platform: "windows" | "mac" | "linux") => {
+    setIsDownloading(platform);
+    try {
+      const response = await fetch(`/api/downloads/agent?platform=${platform}`);
+      if (!response.ok) {
+        const error = await response.json();
+        setMessage({ type: "error", text: error.message || "Download failed" });
+        return;
+      }
+
+      // Get the blob and create download link
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = response.headers.get("Content-Disposition")?.split("filename=")[1]?.replace(/"/g, "") || `XeWorkspace-Agent-${platform}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error: any) {
+      setMessage({ type: "error", text: error.message || "Download failed" });
+    } finally {
+      setIsDownloading(null);
+    }
+  };
 
   useEffect(() => {
     if (sessionStatus === "unauthenticated") {
@@ -68,6 +137,11 @@ export default function ConsentPage() {
       setIsLoading(true);
       const data = await monitoringApi.getMyConsent();
       setConsentData(data);
+      // Capture setup code if available
+      if (data.setupCode) {
+        setSetupCode(data.setupCode);
+        setSetupCodeExpiresAt(data.setupCodeExpiresAt);
+      }
     } catch (error) {
       console.error("Error fetching consent status:", error);
       setMessage({ type: "error", text: "Failed to load consent status" });
@@ -84,9 +158,16 @@ export default function ConsentPage() {
 
     try {
       setIsSubmitting(true);
-      await monitoringApi.submitMyConsent(true, "1.0");
+      const result = await monitoringApi.submitMyConsent(true, "1.0");
       setMessage({ type: "success", text: "Consent submitted successfully. Monitoring is now active." });
+      // Capture setup code from response
+      if (result.setupCode) {
+        setSetupCode(result.setupCode);
+        setSetupCodeExpiresAt(result.setupCodeExpiresAt);
+      }
       await fetchConsentStatus();
+      // Show the desktop agent download dialog after successful consent
+      setAgentDownloadDialogOpen(true);
     } catch (error: any) {
       setMessage({ type: "error", text: error.message || "Failed to submit consent" });
     } finally {
@@ -103,6 +184,36 @@ export default function ConsentPage() {
       setMessage({ type: "error", text: error.message || "Failed to process request" });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleRegenerateSetupCode = async () => {
+    try {
+      setIsRegeneratingCode(true);
+      console.log("Regenerating setup code...");
+      const result = await monitoringApi.regenerateSetupCode();
+      console.log("Regenerate result:", result);
+      if (result.setupCode) {
+        setSetupCode(result.setupCode);
+        setSetupCodeExpiresAt(result.setupCodeExpiresAt);
+        setMessage({ type: "success", text: "Setup code generated!" });
+      } else if (result.error) {
+        setMessage({ type: "error", text: result.error });
+      } else {
+        setMessage({ type: "error", text: "Failed to generate setup code. Please try again." });
+      }
+    } catch (error: any) {
+      console.error("Regenerate setup code error:", error);
+      setMessage({ type: "error", text: error.message || "Failed to generate setup code" });
+    } finally {
+      setIsRegeneratingCode(false);
+    }
+  };
+
+  const copySetupCode = () => {
+    if (setupCode) {
+      navigator.clipboard.writeText(setupCode);
+      setMessage({ type: "success", text: "Setup code copied to clipboard!" });
     }
   };
 
@@ -340,34 +451,116 @@ export default function ConsentPage() {
 
         {/* Active Monitoring - Show revoke option */}
         {consentData?.status === "ACTIVE" && (
-          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                <ShieldCheck className="h-5 w-5" />
-                Monitoring Active
-              </CardTitle>
-              <CardDescription>
-                Your desktop monitoring is currently active. You can revoke consent at any time.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Alert className="mb-4">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Important</AlertTitle>
-                <AlertDescription>
-                  Revoking consent will stop all monitoring activities. Your administrator will be notified.
-                </AlertDescription>
-              </Alert>
+          <>
+            <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 mb-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <ShieldCheck className="h-5 w-5" />
+                  Monitoring Active
+                </CardTitle>
+                <CardDescription>
+                  Your desktop monitoring is currently active. Install the desktop agent to start monitoring.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* Quick Setup Code Section - Always visible for easy access */}
+                <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <h4 className="text-sm font-semibold">Desktop Agent Setup Code</h4>
+                  </div>
 
-              <Button
-                variant="destructive"
-                onClick={() => setRevokeDialogOpen(true)}
-              >
-                <ShieldOff className="h-4 w-4 mr-2" />
-                Revoke Consent
-              </Button>
-            </CardContent>
-          </Card>
+                  {setupCode ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Enter this code in the desktop agent to auto-configure:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-background border-2 border-dashed rounded-lg p-3 text-center">
+                          <span className="text-2xl font-mono font-bold tracking-widest text-primary">
+                            {setupCode}
+                          </span>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={copySetupCode}
+                          title="Copy setup code"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={handleRegenerateSetupCode}
+                          disabled={isRegeneratingCode}
+                          title="Generate new code"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${isRegeneratingCode ? "animate-spin" : ""}`} />
+                        </Button>
+                      </div>
+                      {setupCodeExpiresAt && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          Code expires: {new Date(setupCodeExpiresAt).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        Generate a setup code to easily configure the desktop agent. The code will auto-fill your credentials.
+                      </p>
+                      <Button
+                        variant="default"
+                        onClick={handleRegenerateSetupCode}
+                        disabled={isRegeneratingCode}
+                        className="w-full"
+                      >
+                        {isRegeneratingCode ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate Setup Code
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setAgentDownloadDialogOpen(true)}
+                    className="flex-1"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Download Desktop Agent
+                  </Button>
+                </div>
+
+                <Alert className="mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Important</AlertTitle>
+                  <AlertDescription>
+                    Revoking consent will stop all monitoring activities. Your administrator will be notified.
+                  </AlertDescription>
+                </Alert>
+
+                <Button
+                  variant="destructive"
+                  onClick={() => setRevokeDialogOpen(true)}
+                >
+                  <ShieldOff className="h-4 w-4 mr-2" />
+                  Revoke Consent
+                </Button>
+              </CardContent>
+            </Card>
+          </>
         )}
 
         {/* Not Enabled */}
@@ -438,6 +631,209 @@ export default function ConsentPage() {
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Processing..." : "Revoke Consent"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Desktop Agent Download Dialog */}
+        <Dialog open={agentDownloadDialogOpen} onOpenChange={setAgentDownloadDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MonitorDown className="h-5 w-5 text-primary" />
+                Install Desktop Agent
+              </DialogTitle>
+              <DialogDescription>
+                To start monitoring, please download and install the XeWorkspace Desktop Agent on your computer.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-4 space-y-4">
+              <Alert className="border-blue-200 bg-blue-50 dark:bg-blue-950/20">
+                <CheckCircle2 className="h-4 w-4 text-blue-600" />
+                <AlertTitle className="text-blue-800 dark:text-blue-400">Consent Accepted</AlertTitle>
+                <AlertDescription className="text-blue-700 dark:text-blue-300">
+                  Your consent has been recorded. Install the desktop agent to begin monitoring.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-muted-foreground">Select your operating system:</p>
+
+                {agentAvailability && !agentAvailability.windows.available && !agentAvailability.mac.available && !agentAvailability.linux.available && (
+                  <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/20">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertTitle className="text-amber-800 dark:text-amber-400">Agent Not Built</AlertTitle>
+                    <AlertDescription className="text-amber-700 dark:text-amber-300">
+                      The desktop agent installers have not been built yet. Please contact your administrator to build and deploy the agent.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid gap-3">
+                  <Button
+                    variant="outline"
+                    className={`h-auto py-4 justify-start gap-4 hover:bg-primary/5 hover:border-primary ${agentAvailability?.windows.available === false ? "opacity-50" : ""}`}
+                    onClick={() => handleDownload("windows")}
+                    disabled={isDownloading !== null || agentAvailability?.windows.available === false}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
+                      <Laptop className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Windows</p>
+                      <p className="text-xs text-muted-foreground">
+                        {agentAvailability?.windows.available === false ? "Not available" : "Download .exe installer"}
+                      </p>
+                    </div>
+                    {isDownloading === "windows" ? (
+                      <div className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <Download className="ml-auto h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className={`h-auto py-4 justify-start gap-4 hover:bg-primary/5 hover:border-primary ${agentAvailability?.mac.available === false ? "opacity-50" : ""}`}
+                    onClick={() => handleDownload("mac")}
+                    disabled={isDownloading !== null || agentAvailability?.mac.available === false}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800">
+                      <MonitorSmartphone className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">macOS</p>
+                      <p className="text-xs text-muted-foreground">
+                        {agentAvailability?.mac.available === false ? "Not available" : "Download .dmg installer"}
+                      </p>
+                    </div>
+                    {isDownloading === "mac" ? (
+                      <div className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <Download className="ml-auto h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className={`h-auto py-4 justify-start gap-4 hover:bg-primary/5 hover:border-primary ${agentAvailability?.linux.available === false ? "opacity-50" : ""}`}
+                    onClick={() => handleDownload("linux")}
+                    disabled={isDownloading !== null || agentAvailability?.linux.available === false}
+                  >
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900">
+                      <Monitor className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium">Linux</p>
+                      <p className="text-xs text-muted-foreground">
+                        {agentAvailability?.linux.available === false ? "Not available" : "Download .AppImage"}
+                      </p>
+                    </div>
+                    {isDownloading === "linux" ? (
+                      <div className="ml-auto h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : (
+                      <Download className="ml-auto h-4 w-4 text-muted-foreground" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Quick Setup Code Section */}
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-4 mt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  <h4 className="text-sm font-semibold">Quick Setup (Recommended)</h4>
+                </div>
+
+                {setupCode ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Enter this code in the desktop agent to auto-configure:
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-background border-2 border-dashed rounded-lg p-3 text-center">
+                        <span className="text-2xl font-mono font-bold tracking-widest text-primary">
+                          {setupCode}
+                        </span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={copySetupCode}
+                        title="Copy setup code"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleRegenerateSetupCode}
+                        disabled={isRegeneratingCode}
+                        title="Generate new code"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${isRegeneratingCode ? "animate-spin" : ""}`} />
+                      </Button>
+                    </div>
+                    {setupCodeExpiresAt && (
+                      <p className="text-xs text-muted-foreground text-center">
+                        Code expires: {new Date(setupCodeExpiresAt).toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground text-center">
+                      Generate a setup code to easily configure the desktop agent
+                    </p>
+                    <div className="text-center">
+                      <Button
+                        variant="default"
+                        onClick={handleRegenerateSetupCode}
+                        disabled={isRegeneratingCode}
+                        className="min-w-[200px]"
+                      >
+                        {isRegeneratingCode ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-4 w-4 mr-2" />
+                            Generate Setup Code
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    {message && (
+                      <p className={`text-xs text-center ${message.type === "error" ? "text-red-500" : "text-green-500"}`}>
+                        {message.text}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Manual Setup Instructions */}
+              <details className="rounded-lg border p-4 mt-2">
+                <summary className="text-sm font-medium cursor-pointer">Manual Setup Instructions</summary>
+                <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside mt-3">
+                  <li>Launch the XeWorkspace Agent application</li>
+                  <li>Enter the server URL: <code className="bg-muted px-1 rounded">{serverUrl}</code></li>
+                  <li>Sign in with your email and password</li>
+                  <li>The agent will start monitoring automatically</li>
+                </ol>
+              </details>
+            </div>
+
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setAgentDownloadDialogOpen(false)}>
+                I'll do this later
+              </Button>
+              <Button onClick={() => setAgentDownloadDialogOpen(false)}>
+                Done
               </Button>
             </DialogFooter>
           </DialogContent>

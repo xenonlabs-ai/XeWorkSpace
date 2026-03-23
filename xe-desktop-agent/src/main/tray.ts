@@ -122,22 +122,62 @@ export function showSettingsWindow(): void {
     return;
   }
 
-  settingsWindow = new BrowserWindow({
-    width: 450,
-    height: 550,
-    title: 'XeWorkspace Agent Settings',
-    resizable: false,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
+  const preloadPath = path.join(__dirname, '../preload/index.js');
+  const htmlPath = path.join(__dirname, '../renderer/index.html');
 
-  settingsWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+  console.log('Creating settings window...');
+  console.log('Preload path:', preloadPath);
+  console.log('HTML path:', htmlPath);
 
-  settingsWindow.on('closed', () => {
-    settingsWindow = null;
-  });
+  try {
+    settingsWindow = new BrowserWindow({
+      width: 450,
+      height: 650,
+      title: 'XeWorkspace Agent Settings',
+      resizable: false,
+      show: false, // Don't show until ready
+      webPreferences: {
+        preload: preloadPath,
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    settingsWindow.loadFile(htmlPath);
+
+    settingsWindow.once('ready-to-show', () => {
+      console.log('Settings window ready to show');
+      settingsWindow?.show();
+    });
+
+    settingsWindow.on('closed', () => {
+      console.log('Settings window closed');
+      settingsWindow = null;
+    });
+
+    settingsWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      console.error('Failed to load settings window:', errorCode, errorDescription);
+    });
+
+    settingsWindow.webContents.on('did-finish-load', () => {
+      console.log('Settings window finished loading');
+    });
+
+    settingsWindow.webContents.on('crashed', () => {
+      console.error('Settings window renderer crashed');
+    });
+
+    settingsWindow.on('unresponsive', () => {
+      console.error('Settings window became unresponsive');
+    });
+
+    // Open DevTools in development
+    if (process.env.NODE_ENV === 'development') {
+      settingsWindow.webContents.openDevTools();
+    }
+  } catch (error) {
+    console.error('Error creating settings window:', error);
+  }
 }
 
 export function destroyTray(): void {

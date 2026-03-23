@@ -1,11 +1,13 @@
 "use client"
 
+import { ChangePasswordModal } from "@/components/auth/change-password-modal"
 import { Footer } from "@/components/layout/footer"
 // import { HorizontalHeader } from "@/components/layout/horizontal-header"
 import { Sidebar } from "@/components/layout/sidebar"
 // import { VerticalHeader } from "@/components/layout/vertical-header"
 import { useThemeContext } from "@/components/theme/theme-provider"
 import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
 import { ReactNode, useEffect, useMemo, useState } from "react"
 import { HorizontalHeader } from "./header/horizontal-header"
 import { VerticalHeader } from "./header/vertical-header"
@@ -17,8 +19,18 @@ const IPAD_BREAKPOINT = 768
 
 export function Layout({ children }: { children: ReactNode }) {
 	// const { layout, direction } = useTheme()
-
+	const { data: session } = useSession()
 	const { layout, direction } = useThemeContext()
+
+	// Check if user needs to change password
+	const requiresPasswordChange = (session?.user as any)?.requiresPasswordChange || false
+	const [showPasswordModal, setShowPasswordModal] = useState(false)
+
+	useEffect(() => {
+		if (requiresPasswordChange) {
+			setShowPasswordModal(true)
+		}
+	}, [requiresPasswordChange])
 	// Initialize collapsed state based on screen size (collapsed/hidden on tablet-sized screens)
 	const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -68,6 +80,12 @@ export function Layout({ children }: { children: ReactNode }) {
 
 	return (
 		<div className={containerClass}>
+			{/* Password Change Modal - shown when user needs to change temp password */}
+			<ChangePasswordModal
+				open={showPasswordModal}
+				onSuccess={() => setShowPasswordModal(false)}
+			/>
+
 			{/* Only render the sidebar for vertical layout or on mobile */}
 			{(isVertical || isMobileOpen) && (
 				<Sidebar

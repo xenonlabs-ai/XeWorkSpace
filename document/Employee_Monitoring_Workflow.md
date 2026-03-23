@@ -37,27 +37,45 @@ XeWorkspace provides comprehensive employee monitoring capabilities that allow a
 
 1. Log in as an **Admin** or **Owner** (e.g., `support@xenonlabs.ai`)
 2. Navigate to **Settings** > **Organization Settings**
-3. Enable **Employee Monitoring** feature
-4. Configure monitoring settings:
-   - Screenshot interval (e.g., every 5 minutes)
-   - Enable/disable live streaming
-   - Set working hours for monitoring
+3. Scroll to the **Employee Monitoring** section
+4. Toggle **Enable Employee Monitoring** to ON
+5. Configure monitoring settings:
+   - **Screenshot Interval**: Choose capture frequency (1, 5, 10, 15, or 30 minutes)
+   - **Live Streaming**: Toggle to enable real-time screen viewing
+   - **Working Hours**: Set start and end times for monitoring (e.g., 09:00 to 17:00)
+6. Click **Save Monitoring Settings**
 
 ### Step 2: Request Employee Consent
 
-1. Go to **Team** > **Members**
-2. Select the employee you want to monitor
-3. Click **Enable Monitoring** for that employee
+**Option A: From Members Page**
+1. Go to **Members** in the sidebar
+2. Find the employee you want to monitor
+3. Click **Enable Monitoring** button on their card
 4. The employee will receive a notification to provide consent
 
-### Step 3: View Monitoring Dashboard
+**Option B: From Monitoring Dashboard**
+1. Navigate to **Monitoring** in the sidebar
+2. Go to the **Settings** tab (Consent Management)
+3. Find the employee and click **Enable**
+4. The employee will receive a notification to provide consent
+
+### Step 3: Manage Employees
+
+Admins and Owners can manage employees from the Members page:
+- **Enable/Disable Monitoring**: Toggle monitoring for individual employees
+- **Remove Employee**: Click the trash icon to remove an employee from the organization (requires confirmation)
+- **View Details**: Click on a member card to see detailed information and monitoring status
+
+### Step 4: View Monitoring Dashboard
 
 Once an employee has consented and installed the desktop agent:
 
 1. Navigate to **Monitoring** in the sidebar
-2. View the **Live Viewer** tab for real-time streams
-3. Check **Screenshots** tab for captured images
-4. Review **Daily Reports** for productivity analytics
+2. View the **Live Feed** tab for real-time CCTV-style grid view
+3. Click on any stream for full-screen **Live Viewer**
+4. Check **Sessions** tab for active employee sessions
+5. Review **Daily Reports** for productivity analytics
+6. Manage consent in **Settings** tab
 
 ---
 

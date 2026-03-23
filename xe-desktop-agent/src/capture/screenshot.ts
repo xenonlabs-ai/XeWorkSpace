@@ -5,15 +5,18 @@ import { app } from 'electron';
 import { v4 as uuidv4 } from 'uuid';
 
 class ScreenshotCapture {
-  private tempDir: string;
+  private tempDir: string | null = null;
 
-  constructor() {
-    this.tempDir = path.join(app.getPath('temp'), 'xe-agent-screenshots');
-    this.ensureTempDir();
+  private getTempDir(): string {
+    if (!this.tempDir) {
+      this.tempDir = path.join(app.getPath('temp'), 'xe-agent-screenshots');
+      this.ensureTempDir();
+    }
+    return this.tempDir;
   }
 
   private ensureTempDir(): void {
-    if (!fs.existsSync(this.tempDir)) {
+    if (this.tempDir && !fs.existsSync(this.tempDir)) {
       fs.mkdirSync(this.tempDir, { recursive: true });
     }
   }
@@ -39,7 +42,7 @@ class ScreenshotCapture {
       }
 
       const filename = `screenshot-${uuidv4()}.png`;
-      const filepath = path.join(this.tempDir, filename);
+      const filepath = path.join(this.getTempDir(), filename);
 
       fs.writeFileSync(filepath, image.toPNG());
       console.log('Screenshot captured:', filepath);
@@ -63,10 +66,13 @@ class ScreenshotCapture {
 
   cleanupAll(): void {
     try {
-      const files = fs.readdirSync(this.tempDir);
-      for (const file of files) {
-        const filepath = path.join(this.tempDir, file);
-        fs.unlinkSync(filepath);
+      const tempDir = this.getTempDir();
+      if (fs.existsSync(tempDir)) {
+        const files = fs.readdirSync(tempDir);
+        for (const file of files) {
+          const filepath = path.join(tempDir, file);
+          fs.unlinkSync(filepath);
+        }
       }
     } catch (error) {
       console.warn('Cleanup all error:', error);

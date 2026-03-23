@@ -1,7 +1,6 @@
 "use client"
 
 import type { Member } from "@/components/members"
-import { getMemberById } from "@/components/members/member-data"
 import { useEffect, useState } from "react"
 import { MemberProfileHeader } from "./profile-header"
 import { MemberProfileTabs } from "./profile-tabs"
@@ -16,18 +15,36 @@ export function MemberProfileContent({ memberId }: MemberProfileContentProps) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Simulate fetching member data
     const fetchMember = async () => {
       setLoading(true)
       setError(null)
       try {
-        // In a real app, this would be an API call
-        const id = Number.parseInt(memberId)
-        if (isNaN(id)) {
-             throw new Error("Invalid member ID")
+        const response = await fetch("/api/organizations/members")
+        if (!response.ok) {
+          throw new Error("Failed to fetch members")
         }
-        const memberData = getMemberById(id)
-        setMember(memberData)
+        const data = await response.json()
+        const foundMember = data.members?.find((m: any) => m.id === memberId)
+        if (foundMember) {
+          // Transform API response to Member type
+          setMember({
+            id: foundMember.id,
+            name: `${foundMember.firstName || ""} ${foundMember.lastName || ""}`.trim() || foundMember.email,
+            role: foundMember.jobTitle || foundMember.role || "Member",
+            email: foundMember.email,
+            accessLevel: foundMember.role || "Member",
+            status: foundMember.status || "Active",
+            avatar: foundMember.avatar || "",
+            skills: [],
+            projects: [],
+            bio: "",
+            phone: "",
+            location: "",
+            joinedDate: foundMember.joinedAt || "",
+          })
+        } else {
+          setMember(null)
+        }
       } catch (error) {
         console.error("Error fetching member:", error)
         setError("Failed to load member profile. Please try again later.")

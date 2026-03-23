@@ -1,25 +1,82 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { BarChart3 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+
+interface PerformanceData {
+  month: string;
+  value: number;
+}
 
 export function TeamPerformanceWidget() {
-  const performanceData = [
-    { month: "Jan", value: 65 },
-    { month: "Feb", value: 78 },
-    { month: "Mar", value: 82 },
-    { month: "Apr", value: 75 },
-    { month: "May", value: 90 },
-    { month: "Jun", value: 70 },
-    { month: "Jul", value: 60 },
-    { month: "Aug", value: 85 },
-    { month: "Sep", value: 68 },
-    // { month: "Oct", value: 95 },
-    // { month: "Nov", value: 88 },
-    // { month: "Dec", value: 72 },
-  ];
+  const { data: session } = useSession();
+  const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const average = Math.round(
-    performanceData.reduce((sum, item) => sum + item.value, 0) /
-      performanceData.length
-  );
+  useEffect(() => {
+    const fetchPerformance = async () => {
+      try {
+        const response = await fetch("/api/analytics/team-performance");
+        if (response.ok) {
+          const data = await response.json();
+          setPerformanceData(data.performance || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch team performance:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchPerformance();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  const average = performanceData.length > 0
+    ? Math.round(
+        performanceData.reduce((sum, item) => sum + item.value, 0) /
+          performanceData.length
+      )
+    : 0;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end justify-between gap-1">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((i) => (
+              <Skeleton key={i} className="w-2 flex-1" style={{ height: `${Math.random() * 150 + 50}px` }} />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (performanceData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Team Performance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <BarChart3 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No performance data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -27,15 +84,8 @@ export function TeamPerformanceWidget() {
         <CardTitle>Team Performance</CardTitle>
       </CardHeader>
       <CardContent>
-        {/* Wrapper that hides scrollbar until hover */}
         <div className="relative">
-          <div
-            className="md:w-full
-              overflow-x-auto
-              scrollbar-thin scrollbar-thumb-muted-foreground/40 scrollbar-track-transparent
-              h-full
-            "
-          >
+          <div className="md:w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/40 scrollbar-track-transparent h-full">
             <div className="flex items-end justify-between min-w-[100px] sm:min-w-0 gap-1 pb-1">
               {performanceData.map((item) => (
                 <div

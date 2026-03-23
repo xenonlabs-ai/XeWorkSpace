@@ -32,16 +32,21 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
     AlertCircle,
     AlertTriangle,
+    Camera,
+    Clock,
     Facebook,
     Globe,
     Instagram,
     Linkedin,
     Loader2,
+    Monitor,
     Twitter,
     Upload,
+    Video,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -52,6 +57,14 @@ export function OrganizationSettings() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Employee Monitoring Settings
+  const [monitoringEnabled, setMonitoringEnabled] = useState(false);
+  const [screenshotInterval, setScreenshotInterval] = useState("5");
+  const [liveStreamingEnabled, setLiveStreamingEnabled] = useState(false);
+  const [workingHoursStart, setWorkingHoursStart] = useState("09:00");
+  const [workingHoursEnd, setWorkingHoursEnd] = useState("17:00");
+  const [isSavingMonitoring, setIsSavingMonitoring] = useState(false);
 
   const handleResetOrganization = () => {
     setIsResetting(true);
@@ -74,6 +87,50 @@ export function OrganizationSettings() {
       });
     }, 2000);
   };
+
+  const handleSaveMonitoringSettings = async () => {
+    setIsSavingMonitoring(true);
+    try {
+      const response = await fetch("/api/organizations", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          settings: {
+            monitoring: {
+              enabled: monitoringEnabled,
+              screenshotInterval: parseInt(screenshotInterval),
+              liveStreamingEnabled,
+              workingHours: {
+                start: workingHoursStart,
+                end: workingHoursEnd,
+              },
+            },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to save settings");
+      }
+
+      toast.success("Monitoring settings saved", {
+        description: "Your monitoring configuration has been updated.",
+      });
+    } catch (error) {
+      toast.error("Failed to save settings", {
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSavingMonitoring(false);
+    }
+  };
+
+  const workingHoursOptions = [
+    "00:00", "01:00", "02:00", "03:00", "04:00", "05:00",
+    "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+    "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+    "18:00", "19:00", "20:00", "21:00", "22:00", "23:00",
+  ];
 
   interface OrgField {
     id: string;
@@ -315,6 +372,144 @@ export function OrganizationSettings() {
           <Button variant="outline">Cancel</Button>
           <Button className="bg-primary hover:bg-primary/90 text-white shadow-md">
             Save Changes
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* --- Employee Monitoring Settings --- */}
+      <Card>
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-2">
+            <Monitor className="h-5 w-5 text-primary" />
+            <CardTitle className="text-xl font-semibold tracking-tight text-foreground">
+              Employee Monitoring
+            </CardTitle>
+          </div>
+          <CardDescription>
+            Configure monitoring settings for your organization. Employees will need to provide consent before monitoring begins.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Master Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/30">
+            <div className="space-y-0.5">
+              <Label className="text-base font-medium">Enable Employee Monitoring</Label>
+              <p className="text-sm text-muted-foreground">
+                Allow monitoring of employee activity with their consent
+              </p>
+            </div>
+            <Switch
+              checked={monitoringEnabled}
+              onCheckedChange={setMonitoringEnabled}
+            />
+          </div>
+
+          {/* Screenshot Interval */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Camera className="h-4 w-4 text-muted-foreground" />
+              <Label>Screenshot Interval</Label>
+            </div>
+            <Select
+              value={screenshotInterval}
+              onValueChange={setScreenshotInterval}
+              disabled={!monitoringEnabled}
+            >
+              <SelectTrigger className="w-full md:w-[250px]">
+                <SelectValue placeholder="Select interval" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">Every 1 minute</SelectItem>
+                <SelectItem value="5">Every 5 minutes</SelectItem>
+                <SelectItem value="10">Every 10 minutes</SelectItem>
+                <SelectItem value="15">Every 15 minutes</SelectItem>
+                <SelectItem value="30">Every 30 minutes</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              How often screenshots are captured during active monitoring sessions
+            </p>
+          </div>
+
+          {/* Live Streaming Toggle */}
+          <div className="flex items-center justify-between p-4 rounded-lg border">
+            <div className="flex items-start gap-3">
+              <Video className="h-5 w-5 text-muted-foreground mt-0.5" />
+              <div className="space-y-0.5">
+                <Label className="text-base font-medium">Live Streaming</Label>
+                <p className="text-sm text-muted-foreground">
+                  Enable real-time screen viewing of employee activity
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={liveStreamingEnabled}
+              onCheckedChange={setLiveStreamingEnabled}
+              disabled={!monitoringEnabled}
+            />
+          </div>
+
+          {/* Working Hours */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Label>Working Hours</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Monitoring will only be active during these hours
+            </p>
+            <div className="flex items-center gap-4">
+              <Select
+                value={workingHoursStart}
+                onValueChange={setWorkingHoursStart}
+                disabled={!monitoringEnabled}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="Start time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workingHoursOptions.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground">to</span>
+              <Select
+                value={workingHoursEnd}
+                onValueChange={setWorkingHoursEnd}
+                disabled={!monitoringEnabled}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue placeholder="End time" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workingHoursOptions.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+
+        <CardFooter className="flex justify-end gap-3">
+          <Button variant="outline" disabled={isSavingMonitoring}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveMonitoringSettings}
+            disabled={isSavingMonitoring}
+            className="bg-primary hover:bg-primary/90 text-white shadow-md"
+          >
+            {isSavingMonitoring && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Save Monitoring Settings
           </Button>
         </CardFooter>
       </Card>

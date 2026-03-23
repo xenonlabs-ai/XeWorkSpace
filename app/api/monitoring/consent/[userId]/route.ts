@@ -40,7 +40,7 @@ export async function GET(
       if (agentToken.userId !== userId) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
-    } else if (!session || !["ADMIN", "MANAGER"].includes(session.user.role)) {
+    } else if (!session || !["OWNER", "ADMIN", "MANAGER"].includes(session.user.role)) {
       // Non-agents need admin/manager role
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -101,7 +101,7 @@ export async function POST(
 
     if (action === "enable" || action === "disable") {
       // Admin actions
-      if (!session || !["ADMIN", "MANAGER"].includes(session.user.role)) {
+      if (!session || !["OWNER", "ADMIN", "MANAGER"].includes(session.user.role)) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
 

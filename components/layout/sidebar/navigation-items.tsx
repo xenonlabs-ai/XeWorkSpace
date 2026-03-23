@@ -1,20 +1,13 @@
 "use client"
 
-import navItems from "@/components/layout/navItems"
+import navItems, { type NavItem, type UserRole } from "@/components/layout/navItems"
 import { cn } from "@/lib/utils"
 import { ChevronDown } from "lucide-react"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import type { MouseEvent } from "react"
-import { useState } from "react"
-
-// Define expected nav item type for type safety
-type NavItem = {
-	href: string
-	name: string
-	icon: React.ComponentType<{ className?: string }>
-	subItems?: NavItem[] // Added for sub-menus
-}
+import { useMemo, useState } from "react"
 
 type NavigationItemsProps = {
 	onClick?: (event: MouseEvent<HTMLAnchorElement>) => void
@@ -30,7 +23,19 @@ export function NavigationItems({
 	direction = "ltr",
 }: NavigationItemsProps) {
 	const pathname = usePathname()
+	const { data: session } = useSession()
 	const [openSubMenu, setOpenSubMenu] = useState<string | null>(null)
+
+	// Filter nav items based on user role
+	const filteredNavItems = useMemo(() => {
+		const userRole = (session?.user?.role as UserRole) || "MEMBER"
+		return navItems.filter((item) => {
+			// If no roles specified, accessible to all
+			if (!item.roles) return true
+			// Check if user role is in allowed roles
+			return item.roles.includes(userRole)
+		})
+	}, [session?.user?.role])
 
 	const isActive = (path: string): boolean => {
 		if (path === "/" && pathname === "/") return true
@@ -121,7 +126,7 @@ export function NavigationItems({
 
 	return (
 		<nav className="grid gap-1.5">
-			{(navItems as NavItem[]).map((item) => renderNavItem(item))}
+			{filteredNavItems.map((item) => renderNavItem(item))}
 		</nav>
 	)
 }

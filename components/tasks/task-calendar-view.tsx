@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 type Day = {
   date: number;
@@ -14,12 +16,44 @@ type Day = {
   weekDay: string;
 };
 
+interface TaskDay {
+  date: string;
+  count: number;
+}
+
 export function TaskCalendarView() {
+  const { data: session } = useSession();
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState<Date>(today);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [taskDays, setTaskDays] = useState<TaskDay[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  useEffect(() => {
+    const fetchTaskDays = async () => {
+      try {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth() + 1;
+        const response = await fetch(`/api/tasks/calendar?year=${year}&month=${month}`);
+        if (response.ok) {
+          const data = await response.json();
+          setTaskDays(data.taskDays || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch task days:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchTaskDays();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session, currentMonth]);
 
   const generateDays = (baseDate: Date): Day[] => {
     const year = baseDate.getFullYear();
@@ -53,8 +87,12 @@ export function TaskCalendarView() {
         i === today.getDate() &&
         month === today.getMonth() &&
         year === today.getFullYear();
-      const hasTasks = [4, 8, 12, 15, 20, 22, 25, 28].includes(i);
-      const taskCount = hasTasks ? Math.floor(Math.random() * 3) + 1 : 0;
+
+      // Check if this day has tasks from API data
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+      const taskDay = taskDays.find((td) => td.date === dateStr);
+      const hasTasks = taskDay ? taskDay.count > 0 : false;
+      const taskCount = taskDay?.count || 0;
 
       days.push({
         date: i,
@@ -88,6 +126,26 @@ export function TaskCalendarView() {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const goToNextMonth = () =>
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+
+  if (isLoading) {
+    return (
+      <Card className="w-full overflow-hidden">
+        <CardHeader className="pb-3 border-b flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-primary" />
+            <CardTitle>Task Calendar</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-3">
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <Skeleton key={i} className="h-[50px] w-full rounded-lg" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full overflow-hidden">

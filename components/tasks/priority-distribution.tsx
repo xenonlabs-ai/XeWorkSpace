@@ -1,21 +1,86 @@
-
+"use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PieChart } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+
+interface PriorityData {
+  name: string;
+  count: number;
+  color: string;
+}
 
 export function PriorityDistribution() {
-  // Priority data
-  const priorities = [
-    { name: "High", count: 12, color: "#ef4444" }, // red-500
-    { name: "Medium", count: 18, color: "#f59e0b" }, // amber-500
-    { name: "Low", count: 12, color: "#22c55e" }, // green-500
-  ];
+  const { data: session } = useSession();
+  const [priorities, setPriorities] = useState<PriorityData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPriorities = async () => {
+      try {
+        const response = await fetch("/api/tasks/priority-distribution");
+        if (response.ok) {
+          const data = await response.json();
+          setPriorities(data.priorities || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch priority distribution:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchPriorities();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Priority Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center space-y-12">
+            <Skeleton className="h-44 w-44 rounded-full" />
+            <div className="grid grid-cols-3 gap-3 w-full">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (priorities.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Priority Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <PieChart className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No priority data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const total = priorities.reduce((sum, item) => sum + item.count, 0);
 
   // Build conic-gradient for accurate ring rendering
   let gradient = "";
   let accumulated = 0;
-  priorities.forEach((p, i) => {
+  priorities.forEach((p) => {
     const start = (accumulated / total) * 100;
     const end = ((accumulated + p.count) / total) * 100;
     accumulated += p.count;

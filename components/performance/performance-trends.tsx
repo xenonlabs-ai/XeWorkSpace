@@ -1,6 +1,10 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -11,27 +15,74 @@ import {
   YAxis,
 } from "recharts";
 
+interface TrendData {
+  month: string;
+  productivity: number;
+  quality: number;
+  efficiency: number;
+}
+
 export function PerformanceTrends() {
-  const data = [
-    { month: "Jan", productivity: 35, quality: 25, efficiency: 30 },
-    { month: "Feb", productivity: 30, quality: 20, efficiency: 28 },
-    { month: "Mar", productivity: 25, quality: 15, efficiency: 25 },
-    { month: "Apr", productivity: 28, quality: 10, efficiency: 20 },
-    { month: "May", productivity: 20, quality: 12, efficiency: 22 },
-    { month: "Jun", productivity: 15, quality: 8, efficiency: 18 },
-    { month: "Jul", productivity: 18, quality: 10, efficiency: 15 },
-    { month: "Aug", productivity: 12, quality: 5, efficiency: 12 },
-    { month: "Sep", productivity: 10, quality: 8, efficiency: 10 },
-    { month: "Oct", productivity: 8, quality: 6, efficiency: 8 },
-    { month: "Nov", productivity: 5, quality: 4, efficiency: 5 },
-    { month: "Dec", productivity: 5, quality: 4, efficiency: 5 },
-  ];
+  const { data: session } = useSession();
+  const [data, setData] = useState<TrendData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const response = await fetch("/api/performance/trends");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result.trends || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch performance trends:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchTrends();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
 
   const colors = {
     productivity: "var(--primary)",
     quality: "#3b82f6",
     efficiency: "#10b981",
   };
+
+  if (isLoading) {
+    return (
+      <Card className="col-span-2 bg-background border-border">
+        <CardHeader>
+          <CardTitle>Performance Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card className="col-span-2 bg-background border-border">
+        <CardHeader>
+          <CardTitle>Performance Trends</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-[300px] text-center">
+            <TrendingUp className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No trend data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="col-span-2 bg-background border-border">
@@ -98,15 +149,13 @@ export function PerformanceTrends() {
                 </linearGradient>
               </defs>
 
-              {/* X axis only */}
               <XAxis dataKey="month" stroke="var(--muted-foreground)" />
 
-              {/* Hide Y axis and grid */}
               <YAxis
-                stroke="transparent" // keep the vertical line
-                axisLine={true} // show the axis line
-                tick={false} // hide labels
-                tickLine={false} // hide small ticks
+                stroke="transparent"
+                axisLine={true}
+                tick={false}
+                tickLine={false}
               />
               <CartesianGrid stroke="transparent" />
 
@@ -118,7 +167,6 @@ export function PerformanceTrends() {
                 }}
               />
 
-              {/* Three datasets */}
               <Area
                 type="monotone"
                 dataKey="productivity"

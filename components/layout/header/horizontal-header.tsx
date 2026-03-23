@@ -4,64 +4,27 @@ import { Logo } from "@/components/logo"
 import { ThemeConfig } from "@/components/theme/theme-config"
 import { Button } from "@/components/ui/button"
 import { Menu } from "lucide-react"
-import { useState } from "react"
+import { signOut, useSession } from "next-auth/react"
 import { AuthButtons } from "./auth-buttons"
 import { NavigationLinks } from "./navigation-links"
 import { NotificationsMenu } from "./notifications-menu"
 import { ProfileMenu } from "./profile-menu"
 import { ThemeToggle } from "./theme-toggle"
 
-// Mock notifications data
-const defaultNotifications = [
-  {
-    id: 1,
-    title: "Large Deposit Received",
-    description: "You received a deposit of $2,750.00",
-    time: "Today, 10:30 AM",
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "Monthly Budget Alert",
-    description: "Your 'Dining Out' budget is at 85% of its limit",
-    time: "Yesterday, 3:45 PM",
-    unread: true,
-  },
-  {
-    id: 3,
-    title: "Bill Payment Reminder",
-    description: "Electric bill payment is due in 3 days",
-    time: "Apr 15, 2023",
-    unread: false,
-  },
-]
-
-
-type Notification = {
-  id: number
-  title: string
-  description: string
-  time: string
-  unread: boolean
-}
-
 interface HorizontalHeaderProps {
   toggleSidebar: () => void
   setMobileOpen: (open: boolean) => void
-  notifications?: Notification[]
 }
 
 export function HorizontalHeader({
   toggleSidebar,
   setMobileOpen,
-  notifications = defaultNotifications,
 }: HorizontalHeaderProps) {
-  const [isLoggedIn, setIsLoggedIn] = useState(true) // For demo purposes
+  const { data: session, status } = useSession()
+  const isLoggedIn = status === "authenticated"
 
   const handleLogout = () => {
-    // In a real app, you would handle logout logic here
-    setIsLoggedIn(false)
-    window.location.href = "/auth/login"
+    signOut({ callbackUrl: "/auth/login" })
   }
 
   return (
@@ -86,10 +49,14 @@ export function HorizontalHeader({
           {isLoggedIn ? (
             <>
               {/* Notification Dropdown */}
-              <NotificationsMenu notifications={notifications} />
+              <NotificationsMenu />
 
               {/* Profile Dropdown */}
-              <ProfileMenu handleLogout={handleLogout} userName="John Doe" userEmail="john.doe@example.com" />
+              <ProfileMenu
+                handleLogout={handleLogout}
+                userName={session?.user?.name || "User"}
+                userEmail={session?.user?.email || ""}
+              />
             </>
           ) : (
             <AuthButtons />

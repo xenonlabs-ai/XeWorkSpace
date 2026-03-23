@@ -1,26 +1,44 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Grid3X3 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import React, { useEffect, useState } from "react";
 
 type HeatmapCell = { week: number; value: number };
 type HeatmapRow = { day: string; values: HeatmapCell[] };
 
 export function PerformanceHeatmap() {
+  const { data: session } = useSession();
+  const [data, setData] = useState<HeatmapRow[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  // Generate random sample data
-  const generateHeatmapData = (): HeatmapRow[] =>
-    days.map((day) => ({
-      day,
-      values: weeks.map((week) => ({
-        week,
-        value: Math.floor(Math.random() * 100),
-      })),
-    }));
+  useEffect(() => {
+    const fetchHeatmapData = async () => {
+      try {
+        const response = await fetch("/api/performance/heatmap");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result.heatmap || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch heatmap data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const data = generateHeatmapData();
+    if (session) {
+      fetchHeatmapData();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
 
-  // Modern, subtle color scale (blue-green gradient)
   const getCellColor = (value: number): string => {
     if (value >= 90) return "bg-emerald-600";
     if (value >= 75) return "bg-emerald-500";
@@ -34,7 +52,6 @@ export function PerformanceHeatmap() {
   const HeatmapGrid: React.FC<{ data: HeatmapRow[] }> = ({ data }) => (
     <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
       <div className="min-w-[600px]">
-        {/* Week header */}
         <div className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 mb-2">
           <div />
           {weeks.map((w) => (
@@ -47,7 +64,6 @@ export function PerformanceHeatmap() {
           ))}
         </div>
 
-        {/* Heatmap rows */}
         {data.map((row) => (
           <div
             key={row.day}
@@ -86,6 +102,48 @@ export function PerformanceHeatmap() {
       <span>High</span>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <Card className="border border-border/50 shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">
+            Performance Heatmap
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-1">
+            {days.map((day) => (
+              <div key={day} className="flex gap-1">
+                <Skeleton className="w-[45px] h-7" />
+                {weeks.map((w) => (
+                  <Skeleton key={w} className="flex-1 h-7" />
+                ))}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card className="border border-border/50 shadow-none">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-foreground">
+            Performance Heatmap
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Grid3X3 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No heatmap data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border/50 shadow-none">

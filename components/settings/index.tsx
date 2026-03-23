@@ -6,6 +6,7 @@ import { SettingsHeader } from "./header";
 import { IntegrationsSettings } from "./integrations-settings";
 import { NotificationSettings } from "./notification-settings";
 import { OrganizationSettings } from "./organization-settings";
+import { TeamSettings } from "./team-settings";
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("general");
@@ -24,6 +25,7 @@ export default function Settings() {
         <div>
           <TabsList className="flex flex-wrap w-full h-auto gap-2 p-2 mb-4">
             <TabsTrigger value="general">Organization</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
           </TabsList>
@@ -32,6 +34,10 @@ export default function Settings() {
         {/* --- Tab Contents --- */}
         <TabsContent value="general">
           <OrganizationSettings />
+        </TabsContent>
+
+        <TabsContent value="team">
+          <TeamSettings />
         </TabsContent>
 
         <TabsContent value="notifications">

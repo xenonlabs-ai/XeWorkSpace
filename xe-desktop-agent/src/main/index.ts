@@ -176,6 +176,20 @@ class DesktopAgent {
         return { success: false, error: error.message };
       }
     });
+
+    // Setup with code handler (plug-and-play)
+    ipcMain.handle('setup-with-code', async (_event, serverUrl: string, setupCode: string) => {
+      try {
+        const result = await apiClient.setupWithCode(serverUrl, setupCode);
+        if (result.success) {
+          // Re-initialize the agent after successful setup
+          setTimeout(() => this.reinitialize(), 1000);
+        }
+        return result;
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    });
   }
 
   private async showConsentWindow(): Promise<boolean> {
@@ -192,7 +206,7 @@ class DesktopAgent {
         center: true,
         title: 'XeWorkspace - Monitoring Consent',
         webPreferences: {
-          preload: path.join(__dirname, '../preload.js'),
+          preload: path.join(__dirname, '../preload/index.js'),
           contextIsolation: true,
           nodeIntegration: false,
         },
@@ -468,24 +482,33 @@ class DesktopAgent {
   }
 }
 
-// Application entry point
-const agent = new DesktopAgent();
-
-app.whenReady().then(() => {
-  agent.initialize();
-});
-
-app.on('window-all-closed', (e: Event) => {
-  // Prevent app from quitting when all windows are closed
-  e.preventDefault();
-});
-
-app.on('before-quit', async () => {
-  await agent.shutdown();
-});
-
 // Handle second instance
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
+  console.log('Another instance is already running, quitting...');
   app.quit();
+} else {
+  // Application entry point
+  const agent = new DesktopAgent();
+
+  app.whenReady().then(() => {
+    console.log('App is ready, initializing agent...');
+    agent.initialize();
+  });
+
+  app.on('window-all-closed', (e: Event) => {
+    // Prevent app from quitting when all windows are closed
+    console.log('All windows closed, preventing quit...');
+    e.preventDefault();
+  });
+
+  app.on('before-quit', async () => {
+    console.log('App is quitting...');
+    await agent.shutdown();
+  });
+
+  app.on('second-instance', () => {
+    console.log('Second instance detected, showing settings...');
+    showSettingsWindow();
+  });
 }

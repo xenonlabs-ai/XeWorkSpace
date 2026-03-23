@@ -76,6 +76,8 @@ model User {
   department     String?
   jobTitle       String?
   skills         String?   // JSON string array
+  requiresPasswordChange Boolean @default(false) // True when user is invited with temp password
+  invitedBy      String?   // ID of admin who invited the user
   joinedAt       DateTime  @default(now())
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -391,6 +393,8 @@ model AgentToken {
   expiresAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId], name: "userId_deviceId")
 }
 
 model MonitoringConsent {
@@ -410,6 +414,10 @@ model MonitoringConsent {
 
   // Consent details
   consentVersion      String    @default("1.0")    // Version of terms accepted
+
+  // Quick setup code for agent (6 character alphanumeric)
+  setupCode           String?   @unique           // One-time setup code for easy agent configuration
+  setupCodeExpiresAt  DateTime?                   // Setup code expiry time
 
   // Revocation
   revokedAt           DateTime?

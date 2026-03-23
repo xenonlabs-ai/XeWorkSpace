@@ -3,6 +3,7 @@ import { Activity, CheckSquare, MessageSquare, Users } from "lucide-react";
 import { DashboardHeader } from "./dashboard-header";
 import { GoalsTracker } from "./goals-tracker";
 import { MiniCalendarWidget } from "./mini-calendar";
+import { MonitoringConsentBanner } from "./monitoring-consent-banner";
 import { ProjectAnalytics } from "./project-analytics";
 import { ProjectProgressWidget } from "./project-progress";
 import { ProjectStatusWidget } from "./project-status";
@@ -91,6 +92,9 @@ export function HomeContent() {
   return (
     <>
       <DashboardHeader />
+
+      {/* Monitoring Consent Banner - shown when pending */}
+      <MonitoringConsentBanner />
 
       {/* Stats Cards */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">

@@ -1,15 +1,87 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Building2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+
+interface Department {
+  name: string;
+  productivity: number;
+  tasks: number;
+  quality: number;
+}
 
 export function DepartmentComparison() {
-  // Sample department data
-  const departments = [
-    { name: "Development", productivity: 87, tasks: 42, quality: 92 },
-    { name: "Design", productivity: 85, tasks: 28, quality: 95 },
-    { name: "Marketing", productivity: 82, tasks: 35, quality: 88 },
-    { name: "Sales", productivity: 78, tasks: 30, quality: 85 },
-    { name: "Support", productivity: 90, tasks: 48, quality: 91 },
-  ];
+  const { data: session } = useSession();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const response = await fetch("/api/reports/department-comparison");
+        if (response.ok) {
+          const data = await response.json();
+          setDepartments(data.departments || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch departments:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchDepartments();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Department Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-full mb-4" />
+          <div className="space-y-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex justify-between">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+                <Skeleton className="h-2.5 w-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (departments.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Department Comparison</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <Building2 className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No department data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const maxTasks = Math.max(...departments.map((d) => d.tasks), 1);
 
   return (
     <Card>
@@ -54,7 +126,7 @@ export function DepartmentComparison() {
                   <div className="w-full bg-muted rounded-full h-2.5">
                     <div
                       className="bg-primary rounded-full h-2.5"
-                      style={{ width: `${(dept.tasks / 50) * 100}%` }}
+                      style={{ width: `${(dept.tasks / maxTasks) * 100}%` }}
                     ></div>
                   </div>
                 </div>

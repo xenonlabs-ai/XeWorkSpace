@@ -1,7 +1,11 @@
 "use client";
 
+import { monitoringApi } from "@/lib/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AddMemberDialog } from "./add-member-dialog";
 import { MembersHeader } from "./header";
 import { MemberCard } from "./member-card";
@@ -11,147 +15,95 @@ import { Member } from "./member-data";
 export type { Member };
 
 export function MembersContent() {
+  const { data: session } = useSession();
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const members: Member[] = [
-    {
-      id: 1,
-      name: "Alex Johnson",
-      role: "Developer",
-      email: "alex@example.com",
-      accessLevel: "Admin",
-      status: "Active",
-      avatar: "AJ",
-      skills: ["React", "Node.js", "TypeScript"],
-      projects: ["Website Redesign", "Mobile App"],
-      bio: "Full-stack developer with 5 years of experience in building web applications.",
-      phone: "+1 (555) 123-4567",
-      location: "San Francisco, CA",
-      joinedDate: "Jan 15, 2024",
-    },
-    {
-      id: 2,
-      name: "Samantha Lee",
-      role: "Designer",
-      email: "samantha@example.com",
-      accessLevel: "Member",
-      status: "Active",
-      avatar: "SL",
-      skills: ["UI/UX", "Figma", "Illustration"],
-      projects: ["Brand Refresh", "Website Redesign"],
-      bio: "Creative designer passionate about crafting beautiful and intuitive user experiences.",
-      phone: "+1 (555) 234-5678",
-      location: "New York, NY",
-      joinedDate: "Mar 3, 2024",
-    },
-    {
-      id: 3,
-      name: "Michael Chen",
-      role: "Developer",
-      email: "michael@example.com",
-      accessLevel: "Member",
-      status: "Away",
-      avatar: "MC",
-      skills: ["Python", "Django", "AWS"],
-      projects: ["Backend API", "Data Pipeline"],
-      bio: "Backend developer specializing in scalable systems and cloud infrastructure.",
-      phone: "+1 (555) 345-6789",
-      location: "Seattle, WA",
-      joinedDate: "Feb 10, 2024",
-    },
-    {
-      id: 4,
-      name: "Emily Rodriguez",
-      role: "Marketer",
-      email: "emily@example.com",
-      accessLevel: "Viewer",
-      status: "Active",
-      avatar: "ER",
-      skills: ["Content Strategy", "SEO", "Social Media"],
-      projects: ["Q2 Campaign", "Product Launch"],
-      bio: "Digital marketer with expertise in growth strategies and content creation.",
-      phone: "+1 (555) 456-7890",
-      location: "Austin, TX",
-      joinedDate: "Apr 5, 2024",
-    },
-    {
-      id: 5,
-      name: "David Kim",
-      role: "Designer",
-      email: "david@example.com",
-      accessLevel: "Member",
-      status: "Active",
-      avatar: "DK",
-      skills: ["Product Design", "Prototyping", "Animation"],
-      projects: ["Mobile App", "Design System"],
-      bio: "Product designer focused on creating seamless user experiences across platforms.",
-      phone: "+1 (555) 567-8901",
-      location: "Chicago, IL",
-      joinedDate: "Jan 20, 2024",
-    },
-    {
-      id: 6,
-      name: "Jessica Taylor",
-      role: "Marketer",
-      email: "jessica@example.com",
-      accessLevel: "Member",
-      status: "Away",
-      avatar: "JT",
-      skills: ["Email Marketing", "Analytics", "Copywriting"],
-      projects: ["Newsletter Redesign", "Customer Retention"],
-      bio: "Marketing specialist with a data-driven approach to campaign optimization.",
-      phone: "+1 (555) 678-9012",
-      location: "Miami, FL",
-      joinedDate: "Mar 15, 2024",
-    },
-    {
-      id: 7,
-      name: "Ryan Wilson",
-      role: "Developer",
-      email: "ryan@example.com",
-      accessLevel: "Admin",
-      status: "Active",
-      avatar: "RW",
-      skills: ["JavaScript", "React Native", "GraphQL"],
-      projects: ["Mobile App", "API Integration"],
-      bio: "Mobile developer passionate about creating smooth, native-like experiences.",
-      phone: "+1 (555) 789-0123",
-      location: "Denver, CO",
-      joinedDate: "Feb 1, 2024",
-    },
-    {
-      id: 8,
-      name: "Olivia Martinez",
-      role: "Designer",
-      email: "olivia@example.com",
-      accessLevel: "Viewer",
-      status: "Active",
-      avatar: "OM",
-      skills: ["Brand Design", "Typography", "Illustration"],
-      projects: ["Brand Refresh", "Marketing Materials"],
-      bio: "Visual designer with a strong background in branding and identity design.",
-      phone: "+1 (555) 890-1234",
-      location: "Portland, OR",
-      joinedDate: "Apr 10, 2024",
-    },
-    {
-      id: 9,
-      name: "James Brown",
-      role: "Marketer",
-      email: "james@example.com",
-      accessLevel: "Member",
-      status: "Away",
-      avatar: "JB",
-      skills: ["Content Marketing", "PPC", "Market Research"],
-      projects: ["Q2 Campaign", "Competitor Analysis"],
-      bio: "Strategic marketer specializing in digital advertising and market analysis.",
-      phone: "+1 (555) 901-2345",
-      location: "Boston, MA",
-      joinedDate: "Mar 1, 2024",
-    },
-  ];
+  // Check if current user is Admin or Owner
+  const userRole = (session?.user as any)?.role;
+  const isAdminOrOwner = userRole === "ADMIN" || userRole === "OWNER";
+
+  // Fetch members from API
+  useEffect(() => {
+    const fetchMembers = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch users and consent data in parallel
+        const [usersResponse, consentResponse] = await Promise.all([
+          fetch("/api/users"),
+          isAdminOrOwner ? fetch("/api/monitoring/consent") : Promise.resolve(null),
+        ]);
+
+        if (!usersResponse.ok) {
+          throw new Error("Failed to fetch users");
+        }
+
+        const usersData = await usersResponse.json();
+        const consentData = consentResponse && consentResponse.ok
+          ? await consentResponse.json()
+          : { users: [] };
+
+        // Create a map of userId to monitoring status
+        const consentMap = new Map<string, string>();
+        consentData.users?.forEach((user: any) => {
+          consentMap.set(user.id, user.consentStatus || "NOT_ENABLED");
+        });
+
+        // Transform API data to Member format
+        const transformedMembers: Member[] = usersData.users.map((user: any) => ({
+          id: user.id,
+          name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
+          role: user.jobTitle || user.department || "Member",
+          email: user.email,
+          accessLevel: user.role === "OWNER"
+            ? "Owner"
+            : user.role === "ADMIN"
+            ? "Admin"
+            : user.role === "MANAGER"
+            ? "Manager"
+            : user.role === "VIEWER"
+            ? "Viewer"
+            : "Member",
+          status: user.status === "ACTIVE"
+            ? "Active"
+            : user.status === "AWAY"
+            ? "Away"
+            : user.status === "OFFLINE"
+            ? "Offline"
+            : "Active",
+          avatar: user.avatar || `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`,
+          skills: user.skills || [],
+          projects: [],
+          bio: "",
+          phone: user.phone || "",
+          location: user.location || "",
+          joinedDate: user.joinedAt
+            ? new Date(user.joinedAt).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric"
+              })
+            : "",
+          monitoringStatus: (consentMap.get(user.id) || "NOT_ENABLED") as Member["monitoringStatus"],
+        }));
+
+        setMembers(transformedMembers);
+      } catch (error) {
+        console.error("Error fetching members:", error);
+        toast.error("Failed to load members");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchMembers();
+    }
+  }, [session, isAdminOrOwner]);
 
   const handleOpenMemberDialog = (member: Member) => {
     setSelectedMember(member);
@@ -162,10 +114,95 @@ export function MembersContent() {
     setIsDialogOpen(false);
   };
 
+  const handleToggleMonitoring = async (memberId: string | number) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
+
+    const isCurrentlyEnabled =
+      member.monitoringStatus === "ACTIVE" ||
+      member.monitoringStatus === "PENDING_EMPLOYEE";
+
+    try {
+      if (isCurrentlyEnabled) {
+        await monitoringApi.disableMonitoring(String(memberId));
+        toast.success("Monitoring disabled", {
+          description: `Monitoring has been disabled for ${member.name}.`,
+        });
+      } else {
+        await monitoringApi.enableMonitoring(String(memberId));
+        toast.success("Monitoring enabled", {
+          description: `A consent request has been sent to ${member.name}.`,
+        });
+      }
+
+      // Update local state
+      setMembers((prev) =>
+        prev.map((m) =>
+          m.id === memberId
+            ? {
+                ...m,
+                monitoringStatus: isCurrentlyEnabled
+                  ? ("NOT_ENABLED" as const)
+                  : ("PENDING_EMPLOYEE" as const),
+              }
+            : m
+        )
+      );
+    } catch (error) {
+      toast.error("Failed to update monitoring", {
+        description: "Please try again later.",
+      });
+    }
+  };
+
+  const handleDeleteMember = async (memberId: string | number) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
+
+    try {
+      const response = await fetch(`/api/organizations/members?userId=${memberId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to remove member");
+      }
+
+      // Update local state
+      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+
+      toast.success("Employee removed", {
+        description: `${member.name} has been removed from the organization.`,
+      });
+    } catch (error: any) {
+      toast.error("Failed to remove employee", {
+        description: error.message || "Please try again later.",
+      });
+    }
+  };
+
   const renderMembers = (filterRole?: Member["role"]) => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+
     const filtered = filterRole
       ? members.filter((m) => m.role === filterRole)
       : members;
+
+    if (filtered.length === 0) {
+      return (
+        <div className="text-center py-12 text-muted-foreground">
+          No members found
+        </div>
+      );
+    }
+
     return (
       <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {filtered.map((member) => (
@@ -173,6 +210,9 @@ export function MembersContent() {
             key={member.id}
             member={member}
             onClick={() => handleOpenMemberDialog(member)}
+            isAdminOrOwner={isAdminOrOwner}
+            onToggleMonitoring={handleToggleMonitoring}
+            onDeleteMember={handleDeleteMember}
           />
         ))}
       </div>
@@ -223,6 +263,9 @@ export function MembersContent() {
         member={selectedMember}
         isOpen={isDialogOpen}
         onClose={handleCloseMemberDialog}
+        isAdminOrOwner={isAdminOrOwner}
+        onToggleMonitoring={handleToggleMonitoring}
+        onDeleteMember={handleDeleteMember}
       />
       <AddMemberDialog
         isOpen={isAddMemberOpen}

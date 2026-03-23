@@ -15,8 +15,20 @@ import {
     Users
 } from "lucide-react"
 
+// User roles that can access certain nav items
+export type UserRole = "OWNER" | "ADMIN" | "MANAGER" | "MEMBER"
+
+// Navigation item type with optional role restrictions
+export interface NavItem {
+    name: string
+    href: string
+    icon: React.ComponentType<{ className?: string }>
+    roles?: UserRole[] // If undefined, accessible to all roles
+    subItems?: NavItem[]
+}
+
 // Centralized navigation items configuration
-const navItems = [
+const navItems: NavItem[] = [
     {
         name: "Dashboard",
         href: "/",
@@ -56,6 +68,13 @@ const navItems = [
         name: "Monitoring",
         href: "/monitoring",
         icon: Monitor,
+        roles: ["OWNER", "ADMIN", "MANAGER"], // Admins/Managers see full monitoring dashboard
+    },
+    {
+        name: "My Monitoring",
+        href: "/monitoring/consent",
+        icon: ShieldCheck,
+        roles: ["MEMBER"], // Members see their own monitoring consent page
     },
     {
         name: "Reports",

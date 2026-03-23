@@ -16,7 +16,7 @@ import { NewConversationDialog } from "./new-conversation-dialog";
 
 interface ConversationsListProps {
   conversations: Conversation[];
-  activeConversation: Conversation;
+  activeConversation: Conversation | null;
   onSelectConversation: (conversation: Conversation) => void;
   className?: string;
 }

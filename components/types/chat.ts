@@ -11,7 +11,7 @@ export interface Message {
   content: string;
   time: string;
   isMe: boolean;
-  status: "sending" | "sent" | "delivered" | "read";
+  status: "sending" | "sent" | "delivered" | "read" | "failed";
   reactions?: Reaction[];
   isLatest?: boolean;
 }

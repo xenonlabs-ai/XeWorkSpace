@@ -15,6 +15,24 @@ class ApiClient {
   }
 
   async authenticate(): Promise<boolean> {
+    // If we already have a token from setup code, just verify it's still valid
+    if (this.token) {
+      try {
+        const response = await this.fetch('/api/monitoring/consent/employee', {
+          method: 'GET',
+        });
+        if (response.ok) {
+          return true;
+        }
+        // Token invalid, clear it
+        this.token = null;
+        configStore.set('token', null);
+      } catch {
+        // Continue to try credential auth
+      }
+    }
+
+    // Authenticate with credentials
     try {
       const response = await fetch(`${this.baseUrl}/api/monitoring/agent/auth`, {
         method: 'POST',
@@ -38,6 +56,63 @@ class ApiClient {
     } catch (error) {
       console.error('Authentication error:', error);
       return false;
+    }
+  }
+
+  async setupWithCode(serverUrl: string, setupCode: string): Promise<{
+    success: boolean;
+    error?: string;
+    email?: string;
+  }> {
+    try {
+      const response = await fetch(`${serverUrl}/api/monitoring/agent/setup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          setupCode: setupCode.toUpperCase().trim(),
+          deviceId: configStore.getDeviceId(),
+        }),
+      });
+
+      const data = await response.json() as {
+        success?: boolean;
+        error?: string;
+        config?: {
+          token: string;
+          userId: string;
+          email: string;
+          deviceId: string;
+        };
+      };
+
+      if (!response.ok || !data.success || !data.config) {
+        return {
+          success: false,
+          error: data.error || 'Setup failed',
+        };
+      }
+
+      // Save all configuration from setup response
+      const config = data.config;
+      this.baseUrl = serverUrl;
+      this.token = config.token;
+      configStore.set('serverUrl', serverUrl);
+      configStore.set('token', config.token);
+      configStore.set('userId', config.userId);
+      configStore.set('email', config.email);
+      // Clear password as it's not needed with token auth
+      configStore.set('password', '');
+
+      return {
+        success: true,
+        email: config.email,
+      };
+    } catch (error: any) {
+      console.error('Setup with code error:', error);
+      return {
+        success: false,
+        error: error.message || 'Network error',
+      };
     }
   }
 

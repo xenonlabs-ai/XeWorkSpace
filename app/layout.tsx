@@ -18,7 +18,7 @@ const inter = Inter({
 export default function RootLayout({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
-			<body className={inter.className}>
+			<body className={inter.className} suppressHydrationWarning>
 				<SessionProvider>
 					<ThemeProvider>{children}</ThemeProvider>
 				</SessionProvider>

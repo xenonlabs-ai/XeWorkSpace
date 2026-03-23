@@ -1,5 +1,10 @@
 "use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
   Line,
   LineChart,
@@ -9,46 +14,69 @@ import {
   YAxis,
 } from "recharts";
 
-const trendData = [
-  { date: "Jan", revenue: 4500, expenses: 3700, profit: 800 },
-  { date: "Feb", revenue: 5200, expenses: 4100, profit: 1100 },
-  { date: "Mar", revenue: 4800, expenses: 3900, profit: 900 },
-  { date: "Apr", revenue: 6000, expenses: 4200, profit: 1800 },
-  { date: "May", revenue: 5700, expenses: 4300, profit: 1400 },
-  { date: "Jun", revenue: 6500, expenses: 4500, profit: 2000 },
-  { date: "Jul", revenue: 7200, expenses: 4800, profit: 2400 },
-  { date: "Aug", revenue: 7800, expenses: 5100, profit: 2700 },
-  { date: "Sep", revenue: 8400, expenses: 5300, profit: 3100 },
-  { date: "Oct", revenue: 9100, expenses: 5600, profit: 3500 },
-  { date: "Nov", revenue: 9800, expenses: 5900, profit: 3900 },
-  { date: "Dec", revenue: 10500, expenses: 6200, profit: 4300 },
-];
-
-const keyMetrics = [
-  {
-    name: "Revenue",
-    value: "$10,500",
-    change: 8.3,
-    trend: "up",
-    color: "#8884d8",
-  },
-  {
-    name: "Expenses",
-    value: "$6,200",
-    change: 5.1,
-    trend: "up",
-    color: "#82ca9d",
-  },
-  {
-    name: "Profit",
-    value: "$4,300",
-    change: 10.2,
-    trend: "up",
-    color: "#ffc658",
-  },
-];
+interface TrendData {
+  date: string;
+  revenue: number;
+  expenses: number;
+  profit: number;
+}
 
 export function TrendAnalysis() {
+  const { data: session } = useSession();
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const response = await fetch("/api/analytics/trends");
+        if (response.ok) {
+          const data = await response.json();
+          setTrendData(data.trends || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch trends:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchTrends();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Trend Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-[300px] w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (trendData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Trend Analysis</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center justify-center h-[300px] text-center">
+            <TrendingUp className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No trend data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -56,7 +84,6 @@ export function TrendAnalysis() {
       </CardHeader>
 
       <CardContent className="space-y-8">
-        {/* Line Chart */}
         <div className="h-[300px] pe-2">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart

@@ -2,14 +2,14 @@
   "name": "xe-desktop-agent",
   "version": "1.0.0",
   "description": "XeWorkspace Desktop Monitoring Agent",
-  "main": "dist/main/index.js",
+  "main": "out/main/index.js",
   "author": "XeWorkspace",
   "license": "MIT",
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "set ELECTRON_RUN_AS_NODE= && electron-vite dev",
     "build": "electron-vite build",
-    "start": "electron .",
-    "preview": "electron-vite preview",
+    "start": "set ELECTRON_RUN_AS_NODE= && electron .",
+    "preview": "set ELECTRON_RUN_AS_NODE= && electron-vite preview",
     "package": "electron-builder",
     "package:win": "electron-builder --win",
     "package:mac": "electron-builder --mac",
@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "@types/uuid": "^9.0.7",
-    "electron": "^28.1.0",
+    "electron": "^28.3.3",
     "electron-builder": "^24.9.1",
     "electron-vite": "^2.0.0",
     "typescript": "^5.3.3",
@@ -40,27 +40,34 @@
       "output": "release"
     },
     "files": [
-      "dist/**/*",
+      "out/**/*",
       "assets/**/*"
     ],
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "icon": "assets/icons/icon.icns",
       "category": "public.app-category.productivity"
     },
     "win": {
-      "target": ["nsis", "zip"],
-      "icon": "assets/icons/icon.ico"
+      "target": [
+        "nsis"
+      ],
+      "signAndEditExecutable": false
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "icon": "assets/icons",
       "category": "Utility"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icons/icon.ico"
+      "oneClick": true,
+      "perMachine": false
     }
   }
 }

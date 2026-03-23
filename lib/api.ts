@@ -197,4 +197,8 @@ export const monitoringApi = {
       method: "POST",
       body: JSON.stringify({ action: "revoke", reason }),
     }),
+  regenerateSetupCode: () =>
+    fetchApi<any>("/monitoring/consent/me", {
+      method: "PATCH",
+    }),
 };

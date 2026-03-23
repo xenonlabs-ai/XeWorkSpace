@@ -6,6 +6,7 @@ interface ConfigSchema {
   email: string;
   password: string;
   token: string | null;
+  userId: string | null;
   sessionId: string | null;
   deviceId: string;
   captureInterval: number; // in minutes
@@ -19,6 +20,7 @@ const defaults: ConfigSchema = {
   email: '',
   password: '',
   token: null,
+  userId: null,
   sessionId: null,
   deviceId: uuidv4(),
   captureInterval: 2, // 2 minutes
@@ -56,7 +58,10 @@ class ConfigStore {
   }
 
   isConfigured(): boolean {
-    return !!(this.get('email') && this.get('password') && this.get('serverUrl'));
+    // Configured if either: has token (setup code was used) OR has email+password
+    const hasToken = !!this.get('token');
+    const hasCredentials = !!(this.get('email') && this.get('password') && this.get('serverUrl'));
+    return hasToken || hasCredentials;
   }
 
   getAll(): ConfigSchema {

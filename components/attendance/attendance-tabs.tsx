@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 
 export interface AttendanceRecord {
-  id: number;
+  id: string;
   name: string;
   date: string;
   checkIn: string;
@@ -35,6 +35,7 @@ export interface AttendanceRecord {
 
 interface AttendanceTabsProps {
   attendanceRecords: AttendanceRecord[];
+  isLoading?: boolean;
 }
 
 // Reusable status badge for mobile & desktop
@@ -65,7 +66,22 @@ function StatusBadge({ status }: { status: AttendanceRecord["status"] }) {
   );
 }
 
-export function AttendanceTabs({ attendanceRecords }: AttendanceTabsProps) {
+export function AttendanceTabs({ attendanceRecords, isLoading }: AttendanceTabsProps) {
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden">
+        <CardHeader className="pb-2">
+          <CardTitle>Daily Attendance</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">

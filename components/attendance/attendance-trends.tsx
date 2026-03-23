@@ -1,24 +1,79 @@
 "use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { TrendingUp } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import {
-    Line,
-    LineChart,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from "recharts";
 
+interface TrendData {
+  name: string;
+  tasks: number;
+}
+
 export function AttendanceTrends() {
-  const data = [
-    { name: "Mon", tasks: 12 },
-    { name: "Tue", tasks: 18 },
-    { name: "Wed", tasks: 25 },
-    { name: "Thu", tasks: 22 },
-    { name: "Fri", tasks: 30 },
-    { name: "Sat", tasks: 28 },
-    { name: "Sun", tasks: 20 },
-  ];
+  const { data: session } = useSession();
+  const [data, setData] = useState<TrendData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTrends = async () => {
+      try {
+        const response = await fetch("/api/attendance/trends");
+        if (response.ok) {
+          const result = await response.json();
+          setData(result.trends || []);
+        }
+      } catch (error) {
+        console.error("Failed to fetch attendance trends:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchTrends();
+    } else {
+      setIsLoading(false);
+    }
+  }, [session]);
+
+  if (isLoading) {
+    return (
+      <Card className="bg-background border-border">
+        <CardHeader>
+          <CardTitle>Weekly Task Progress</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <Skeleton className="w-full h-[260px]" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card className="bg-background border-border">
+        <CardHeader>
+          <CardTitle>Weekly Task Progress</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="flex flex-col items-center justify-center h-[260px] text-center">
+            <TrendingUp className="h-10 w-10 text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground">No trend data available</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-background border-border">

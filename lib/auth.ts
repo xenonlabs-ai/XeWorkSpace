@@ -53,6 +53,7 @@ export const authOptions: NextAuthOptions = {
           image: user.avatar,
           organizationId: user.organizationId,
           organization: user.organization,
+          requiresPasswordChange: user.requiresPasswordChange || false,
         };
       },
     }),
@@ -67,6 +68,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.organizationId = (user as any).organizationId;
         token.organization = (user as any).organization;
+        token.requiresPasswordChange = (user as any).requiresPasswordChange || false;
       }
 
       // Refresh organization data on session update
@@ -88,6 +90,7 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role;
           token.organizationId = dbUser.organizationId;
           token.organization = dbUser.organization;
+          token.requiresPasswordChange = dbUser.requiresPasswordChange || false;
         }
       }
 
@@ -99,6 +102,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as any).id = token.id;
         (session.user as any).organizationId = token.organizationId;
         (session.user as any).organization = token.organization;
+        (session.user as any).requiresPasswordChange = token.requiresPasswordChange;
       }
       return session;
     },
