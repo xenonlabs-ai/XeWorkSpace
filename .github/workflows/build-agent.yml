@@ -50,21 +50,21 @@ jobs:
       - name: Rename artifact (Windows)
         if: matrix.platform == 'win'
         working-directory: xe-desktop-agent/release
+        shell: bash
         run: |
-          mv "XeWorkspace Agent Setup 1.0.0.exe" "XeWorkspace-Agent-Setup.exe" || true
+          for f in "XeWorkspace Agent Setup"*.exe; do mv "$f" "XeWorkspace-Agent-Setup.exe" 2>/dev/null || true; done
 
       - name: Rename artifact (macOS)
         if: matrix.platform == 'mac'
         working-directory: xe-desktop-agent/release
         run: |
-          mv "XeWorkspace Agent-1.0.0.dmg" "XeWorkspace-Agent.dmg" 2>/dev/null || \
-          mv "XeWorkspace Agent-1.0.0-arm64.dmg" "XeWorkspace-Agent.dmg" 2>/dev/null || true
+          for f in "XeWorkspace Agent"*.dmg; do mv "$f" "XeWorkspace-Agent.dmg" 2>/dev/null || true; done
 
       - name: Rename artifact (Linux)
         if: matrix.platform == 'linux'
         working-directory: xe-desktop-agent/release
         run: |
-          mv "XeWorkspace Agent-1.0.0.AppImage" "XeWorkspace-Agent.AppImage" 2>/dev/null || true
+          for f in "XeWorkspace Agent"*.AppImage; do mv "$f" "XeWorkspace-Agent.AppImage" 2>/dev/null || true; done
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
