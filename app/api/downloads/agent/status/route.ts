@@ -14,14 +14,23 @@ const PLATFORM_FILES: Record<string, string> = {
 // GET /api/downloads/agent/status
 export async function GET() {
   try {
+    // Build headers - include auth token if available (for private repos)
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "XeWorkspace-Agent-Status",
+    };
+
+    // Use GitHub token if available (required for private repos)
+    const githubToken = process.env.GITHUB_TOKEN;
+    if (githubToken) {
+      headers["Authorization"] = `Bearer ${githubToken}`;
+    }
+
     // Get releases from GitHub
     const releaseResponse = await fetch(
       `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
       {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "XeWorkspace-Agent-Status",
-        },
+        headers,
         next: { revalidate: 300 }, // Cache for 5 minutes
       }
     );

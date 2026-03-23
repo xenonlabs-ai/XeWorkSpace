@@ -35,14 +35,22 @@ export async function GET(request: NextRequest) {
   const fileConfig = AGENT_FILES[platform];
 
   try {
+    // Build headers - include auth token if available (for private repos)
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "XeWorkspace-Agent-Download",
+    };
+
+    const githubToken = process.env.GITHUB_TOKEN;
+    if (githubToken) {
+      headers["Authorization"] = `Bearer ${githubToken}`;
+    }
+
     // Get the latest release from GitHub
     const releaseResponse = await fetch(
       `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
       {
-        headers: {
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "XeWorkspace-Agent-Download",
-        },
+        headers,
         next: { revalidate: 300 }, // Cache for 5 minutes
       }
     );
@@ -85,7 +93,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Redirect to the GitHub download URL
+    // For private repos, we need to fetch the asset with auth and stream it
+    // For public repos, we can redirect directly
+    if (githubToken) {
+      // Fetch the asset with authentication
+      const assetResponse = await fetch(asset.url, {
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: "application/octet-stream",
+          "User-Agent": "XeWorkspace-Agent-Download",
+        },
+      });
+
+      if (!assetResponse.ok) {
+        throw new Error("Failed to download asset");
+      }
+
+      // Stream the response back with correct headers
+      return new NextResponse(assetResponse.body, {
+        headers: {
+          "Content-Type": fileConfig.contentType,
+          "Content-Disposition": `attachment; filename="${fileConfig.filename}"`,
+          "Content-Length": asset.size.toString(),
+        },
+      });
+    }
+
+    // Redirect to the GitHub download URL (works for public repos)
     return NextResponse.redirect(asset.browser_download_url);
   } catch (error) {
     console.error("Error fetching release:", error);
