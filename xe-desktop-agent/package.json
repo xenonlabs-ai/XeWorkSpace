@@ -52,7 +52,6 @@
         "dmg",
         "zip"
       ],
-      "icon": "assets/icons/icon.icns",
       "category": "public.app-category.productivity"
     },
     "win": {
@@ -63,10 +62,8 @@
     },
     "linux": {
       "target": [
-        "AppImage",
-        "deb"
+        "AppImage"
       ],
-      "icon": "assets/icons",
       "category": "Utility"
     },
     "nsis": {
