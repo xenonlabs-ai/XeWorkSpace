@@ -114,7 +114,7 @@ export function DesktopSidebar({ isCollapsed, direction = "ltr" }: DesktopSideba
                               {item.name}
                             </div>
                             <div className="grid gap-1">
-                              {item.subItems.map((subItem: any) => (
+                              {item.subItems?.map((subItem: any) => (
                                 <Link
                                   key={subItem.name}
                                   href={subItem.href}
