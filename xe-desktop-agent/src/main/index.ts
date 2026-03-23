@@ -25,12 +25,16 @@ class DesktopAgent {
   private userName: string = '';
   private consentWindow: BrowserWindow | null = null;
   private consentResolve: ((value: boolean) => void) | null = null;
+  private handlersRegistered: boolean = false;
 
   async initialize(): Promise<void> {
     console.log('Initializing XeWorkspace Desktop Agent...');
 
-    // Setup IPC handlers for consent
-    this.setupConsentHandlers();
+    // Setup IPC handlers only once (prevent duplicate registration on reinitialize)
+    if (!this.handlersRegistered) {
+      this.setupConsentHandlers();
+      this.handlersRegistered = true;
+    }
 
     // Check if configured
     if (!configStore.isConfigured()) {
@@ -280,8 +284,14 @@ class DesktopAgent {
   }
 
   private async reinitialize(): Promise<void> {
-    destroyTray();
-    await this.initialize();
+    console.log('Reinitializing agent...');
+    try {
+      destroyTray();
+      await this.initialize();
+      console.log('Reinitialization complete');
+    } catch (error) {
+      console.error('Reinitialization failed:', error);
+    }
   }
 
   async startMonitoring(): Promise<void> {

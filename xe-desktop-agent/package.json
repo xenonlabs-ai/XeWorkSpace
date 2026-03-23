@@ -1,6 +1,6 @@
 {
   "name": "xe-desktop-agent",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "XeWorkspace Desktop Monitoring Agent",
   "main": "out/main/index.js",
   "author": "XeWorkspace",
