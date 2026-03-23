@@ -40,6 +40,7 @@
   "build": {
     "appId": "com.xeworkspace.desktop-agent",
     "productName": "XeWorkspace Agent",
+    "publish": null,
     "directories": {
       "output": "release"
     },
