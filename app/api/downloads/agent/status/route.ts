@@ -1,72 +1,96 @@
-import { NextRequest, NextResponse } from "next/server";
-import { existsSync, statSync } from "fs";
-import { join } from "path";
+import { NextResponse } from "next/server";
 
-// Agent file configurations
-const AGENT_FILES: Record<string, { filename: string; label: string }> = {
-  windows: {
-    filename: "XeWorkspace-Agent-Setup.exe",
-    label: "Windows",
-  },
-  mac: {
-    filename: "XeWorkspace-Agent.dmg",
-    label: "macOS",
-  },
-  linux: {
-    filename: "XeWorkspace-Agent.AppImage",
-    label: "Linux",
-  },
+// GitHub repository info
+const GITHUB_OWNER = "xenonlabs-ai";
+const GITHUB_REPO = "XeWorkSpace";
+
+// Expected filenames for each platform
+const PLATFORM_FILES: Record<string, string> = {
+  windows: "XeWorkspace-Agent-Setup.exe",
+  mac: "XeWorkspace-Agent.dmg",
+  linux: "XeWorkspace-Agent.AppImage",
 };
 
-// GET /api/downloads/agent/status - Check which agent files are available
-export async function GET(request: NextRequest) {
-  const availability: Record<string, { available: boolean; size?: number; label: string }> = {};
+// GET /api/downloads/agent/status
+export async function GET() {
+  try {
+    // Get releases from GitHub
+    const releaseResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
+      {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "XeWorkspace-Agent-Status",
+        },
+        next: { revalidate: 300 }, // Cache for 5 minutes
+      }
+    );
 
-  for (const [platform, config] of Object.entries(AGENT_FILES)) {
-    const possiblePaths = [
-      join(process.cwd(), "public", "downloads", config.filename),
-      join(process.cwd(), "xe-desktop-agent", "release", config.filename),
-    ];
+    if (!releaseResponse.ok) {
+      throw new Error("Failed to fetch releases");
+    }
 
-    let found = false;
-    let fileSize: number | undefined;
+    const releases = await releaseResponse.json();
 
-    for (const path of possiblePaths) {
-      if (existsSync(path)) {
-        found = true;
-        try {
-          const stat = statSync(path);
-          fileSize = stat.size;
-        } catch {
-          // Ignore stat errors
-        }
-        break;
+    // Find the latest agent release (tags starting with "agent-v")
+    const agentRelease = releases.find((r: any) =>
+      r.tag_name.startsWith("agent-v")
+    );
+
+    if (!agentRelease) {
+      // No release found - all platforms unavailable
+      return NextResponse.json({
+        hasRelease: false,
+        version: null,
+        availability: {
+          windows: { available: false, label: "Not released" },
+          mac: { available: false, label: "Not released" },
+          linux: { available: false, label: "Not released" },
+        },
+        message: "No desktop agent release found. Create a release by tagging: git tag agent-v1.0.0 && git push --tags",
+      });
+    }
+
+    // Check availability for each platform
+    const availability: Record<string, { available: boolean; label: string; size?: string }> = {};
+
+    for (const [platform, filename] of Object.entries(PLATFORM_FILES)) {
+      const asset = agentRelease.assets.find((a: any) => a.name === filename);
+      if (asset) {
+        const sizeMB = (asset.size / (1024 * 1024)).toFixed(1);
+        availability[platform] = {
+          available: true,
+          label: `v${agentRelease.tag_name.replace("agent-v", "")} (${sizeMB} MB)`,
+          size: sizeMB,
+        };
+      } else {
+        availability[platform] = {
+          available: false,
+          label: "Not available",
+        };
       }
     }
 
-    availability[platform] = {
-      available: found,
-      size: fileSize,
-      label: config.label,
-    };
+    return NextResponse.json({
+      hasRelease: true,
+      version: agentRelease.tag_name.replace("agent-v", ""),
+      releaseDate: agentRelease.published_at,
+      releaseName: agentRelease.name,
+      availability,
+      releaseUrl: agentRelease.html_url,
+    });
+  } catch (error) {
+    console.error("Error checking agent status:", error);
+
+    return NextResponse.json({
+      hasRelease: false,
+      version: null,
+      availability: {
+        windows: { available: false, label: "Error checking" },
+        mac: { available: false, label: "Error checking" },
+        linux: { available: false, label: "Error checking" },
+      },
+      error: "Failed to check release status",
+    });
   }
-
-  const anyAvailable = Object.values(availability).some((a) => a.available);
-
-  return NextResponse.json({
-    availability,
-    anyAvailable,
-    buildRequired: !anyAvailable,
-    buildInstructions: !anyAvailable
-      ? {
-          message: "Desktop agent installers have not been built yet.",
-          steps: [
-            "Navigate to xe-desktop-agent directory",
-            "Run: npm install",
-            "Run: npm run package (or npm run package:win for Windows only)",
-            "Copy built files from xe-desktop-agent/release/ to public/downloads/",
-          ],
-        }
-      : null,
-  });
 }

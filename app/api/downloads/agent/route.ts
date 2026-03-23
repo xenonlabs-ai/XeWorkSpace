@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { existsSync, statSync, createReadStream } from "fs";
-import { join } from "path";
+
+// GitHub repository info
+const GITHUB_OWNER = "xenonlabs-ai";
+const GITHUB_REPO = "XeWorkSpace";
 
 // Agent file configurations
 const AGENT_FILES: Record<string, { filename: string; contentType: string }> = {
@@ -32,66 +34,67 @@ export async function GET(request: NextRequest) {
 
   const fileConfig = AGENT_FILES[platform];
 
-  // Check multiple possible locations for the agent files
-  const possiblePaths = [
-    join(process.cwd(), "public", "downloads", fileConfig.filename),
-    join(process.cwd(), "xe-desktop-agent", "release", fileConfig.filename),
-  ];
+  try {
+    // Get the latest release from GitHub
+    const releaseResponse = await fetch(
+      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases`,
+      {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "XeWorkspace-Agent-Download",
+        },
+        next: { revalidate: 300 }, // Cache for 5 minutes
+      }
+    );
 
-  let filePath: string | null = null;
-  for (const path of possiblePaths) {
-    if (existsSync(path)) {
-      filePath = path;
-      break;
+    if (!releaseResponse.ok) {
+      throw new Error("Failed to fetch releases");
     }
-  }
 
-  if (!filePath) {
+    const releases = await releaseResponse.json();
+
+    // Find the latest agent release (tags starting with "agent-v")
+    const agentRelease = releases.find((r: any) =>
+      r.tag_name.startsWith("agent-v")
+    );
+
+    if (!agentRelease) {
+      return NextResponse.json(
+        {
+          error: "No agent release found",
+          message: "The desktop agent has not been released yet. Please contact your administrator.",
+          instructions: "Run: git tag agent-v1.0.0 && git push --tags",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Find the asset for this platform
+    const asset = agentRelease.assets.find(
+      (a: any) => a.name === fileConfig.filename
+    );
+
+    if (!asset) {
+      return NextResponse.json(
+        {
+          error: "Platform not available",
+          message: `The ${platform} installer is not available in this release.`,
+          availableAssets: agentRelease.assets.map((a: any) => a.name),
+        },
+        { status: 404 }
+      );
+    }
+
+    // Redirect to the GitHub download URL
+    return NextResponse.redirect(asset.browser_download_url);
+  } catch (error) {
+    console.error("Error fetching release:", error);
+
     return NextResponse.json(
       {
-        error: "Agent not available",
-        message: `The ${platform} desktop agent has not been built yet. Please contact your administrator.`,
-        buildInstructions: {
-          step1: "cd xe-desktop-agent",
-          step2: "npm install",
-          step3: `npm run package:${platform === "windows" ? "win" : platform}`,
-          step4: "Copy the built file to public/downloads/",
-        },
+        error: "Failed to fetch download",
+        message: "Unable to retrieve the download link. Please try again later.",
       },
-      { status: 404 }
-    );
-  }
-
-  try {
-    const stat = statSync(filePath);
-    const fileStream = createReadStream(filePath);
-
-    // Convert Node.js stream to Web ReadableStream
-    const webStream = new ReadableStream({
-      start(controller) {
-        fileStream.on("data", (chunk) => {
-          controller.enqueue(chunk);
-        });
-        fileStream.on("end", () => {
-          controller.close();
-        });
-        fileStream.on("error", (err) => {
-          controller.error(err);
-        });
-      },
-    });
-
-    return new NextResponse(webStream, {
-      headers: {
-        "Content-Type": fileConfig.contentType,
-        "Content-Disposition": `attachment; filename="${fileConfig.filename}"`,
-        "Content-Length": stat.size.toString(),
-      },
-    });
-  } catch (error) {
-    console.error("Error serving agent file:", error);
-    return NextResponse.json(
-      { error: "Failed to serve file" },
       { status: 500 }
     );
   }

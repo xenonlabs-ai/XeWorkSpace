@@ -1,0 +1,119 @@
+name: Build Desktop Agent
+
+on:
+  push:
+    tags:
+      - 'agent-v*'  # Trigger on tags like agent-v1.0.0
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            platform: win
+            artifact: "XeWorkspace-Agent-Setup.exe"
+          - os: macos-latest
+            platform: mac
+            artifact: "XeWorkspace-Agent.dmg"
+          - os: ubuntu-latest
+            platform: linux
+            artifact: "XeWorkspace-Agent.AppImage"
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: xe-desktop-agent/package-lock.json
+
+      - name: Install dependencies
+        working-directory: xe-desktop-agent
+        run: npm ci
+
+      - name: Build application
+        working-directory: xe-desktop-agent
+        run: npm run build
+
+      - name: Package for ${{ matrix.platform }}
+        working-directory: xe-desktop-agent
+        run: npm run package:${{ matrix.platform }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename artifact (Windows)
+        if: matrix.platform == 'win'
+        working-directory: xe-desktop-agent/release
+        run: |
+          mv "XeWorkspace Agent Setup 1.0.0.exe" "XeWorkspace-Agent-Setup.exe" || true
+
+      - name: Rename artifact (macOS)
+        if: matrix.platform == 'mac'
+        working-directory: xe-desktop-agent/release
+        run: |
+          mv "XeWorkspace Agent-1.0.0.dmg" "XeWorkspace-Agent.dmg" 2>/dev/null || \
+          mv "XeWorkspace Agent-1.0.0-arm64.dmg" "XeWorkspace-Agent.dmg" 2>/dev/null || true
+
+      - name: Rename artifact (Linux)
+        if: matrix.platform == 'linux'
+        working-directory: xe-desktop-agent/release
+        run: |
+          mv "XeWorkspace Agent-1.0.0.AppImage" "XeWorkspace-Agent.AppImage" 2>/dev/null || true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-${{ matrix.platform }}
+          path: xe-desktop-agent/release/${{ matrix.artifact }}
+          if-no-files-found: warn
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List artifacts
+        run: find artifacts -type f
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Desktop Agent ${{ github.ref_name }}
+          body: |
+            ## XeWorkspace Desktop Agent
+
+            Download the installer for your operating system:
+
+            | Platform | Download |
+            |----------|----------|
+            | Windows | `XeWorkspace-Agent-Setup.exe` |
+            | macOS | `XeWorkspace-Agent.dmg` |
+            | Linux | `XeWorkspace-Agent.AppImage` |
+
+            ### Installation
+            1. Download the installer for your OS
+            2. Run the installer
+            3. Open the app and enter your setup code from the web portal
+
+            ### Note for Windows users
+            You may see a SmartScreen warning. Click "More info" → "Run anyway" to proceed.
+          files: |
+            artifacts/agent-win/XeWorkspace-Agent-Setup.exe
+            artifacts/agent-mac/XeWorkspace-Agent.dmg
+            artifacts/agent-linux/XeWorkspace-Agent.AppImage
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
