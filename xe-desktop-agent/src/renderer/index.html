@@ -1031,47 +1031,35 @@
       setupView.classList.remove('hidden');
     }
 
-    // Load existing config
+    // Load existing config - only pre-fill server URL for convenience
+    // Always show setup view first, user must enter setup code
     async function loadConfig() {
       try {
         if (window.electronAPI) {
           const config = await window.electronAPI.getConfig();
           if (config) {
-            // Set server URL in both forms
-            serverUrlInput.value = config.serverUrl || '';
-            quickServerUrlInput.value = config.serverUrl || '';
+            // Only pre-fill server URL for convenience (not credentials)
+            const serverUrl = config.serverUrl || '';
+            if (serverUrl && serverUrl !== 'http://localhost:3000') {
+              serverUrlInput.value = serverUrl;
+              quickServerUrlInput.value = serverUrl;
+            }
 
-            // Set credentials for manual form
-            emailInput.value = config.email || '';
-            passwordInput.value = config.password || '';
-
-            // Set capture settings
+            // Set capture settings for manual form
             captureInterval.value = config.captureInterval || 2;
             captureIntervalValue.textContent = (config.captureInterval || 2) + ' min';
             idleThreshold.value = Math.floor((config.idleThreshold || 300) / 60);
             idleThresholdValue.textContent = Math.floor((config.idleThreshold || 300) / 60) + ' min';
 
-            // Update button states after loading config
+            // Update button states
             updateTestButtonState();
-
-            // If already has token, check if monitoring is active
-            if (config.token && config.email) {
-              // Check consent status to determine if connected
-              try {
-                const status = await window.electronAPI.checkConsentStatus();
-                if (status && status.canMonitor) {
-                  showConnectedView(config.email, config.serverUrl);
-                  return;
-                }
-              } catch (e) {
-                console.error('Failed to check consent status:', e);
-              }
-            }
           }
         }
       } catch (error) {
         console.error('Failed to load config:', error);
       }
+      // Always show setup view - user must enter setup code
+      showSetupView();
     }
 
     loadConfig();

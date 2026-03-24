@@ -34,14 +34,25 @@ class DesktopAgent {
     if (!this.handlersRegistered) {
       this.setupConsentHandlers();
       this.handlersRegistered = true;
+
+      // On fresh app start, clear auth tokens so user must enter setup code
+      // Keep server URL for convenience but require new authentication
+      configStore.set('token', null);
+      configStore.set('email', '');
+      configStore.set('password', '');
+      configStore.set('userId', null);
+      configStore.set('sessionId', null);
     }
 
-    // Check if configured
+    // Always show settings window for setup code entry on fresh start
     if (!configStore.isConfigured()) {
-      console.log('Agent not configured, showing settings...');
+      console.log('Agent not configured, showing settings for setup code...');
       showSettingsWindow();
       return;
     }
+
+    // Even if configured, verify we can still connect
+    // If not, clear config and show setup
 
     // Initialize window tracker
     await windowTracker.initialize();
