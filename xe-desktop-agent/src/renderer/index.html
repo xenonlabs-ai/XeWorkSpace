@@ -560,6 +560,9 @@
         <button class="button button-decline" id="declineConsentBtn">
           Decline
         </button>
+        <button class="button button-secondary" id="useDifferentAccountBtn" style="margin-top: 8px; font-size: 13px;">
+          Use Different Account
+        </button>
       </div>
     </div>
   </div>
@@ -1136,6 +1139,37 @@
         declineConsentBtn.classList.remove('loading');
         declineConsentBtn.disabled = false;
         acceptConsentBtn.disabled = false;
+      }
+    });
+
+    // Use Different Account button handler (in consent dialog)
+    const useDifferentAccountBtn = document.getElementById('useDifferentAccountBtn');
+    useDifferentAccountBtn.addEventListener('click', async () => {
+      if (!confirm('This will disconnect the current account. You will need to enter a new setup code.')) {
+        return;
+      }
+
+      useDifferentAccountBtn.classList.add('loading');
+      useDifferentAccountBtn.disabled = true;
+
+      try {
+        if (window.electronAPI && window.electronAPI.clearConfig) {
+          await window.electronAPI.clearConfig();
+          hideConsentDialog();
+          showSetupView();
+          // Clear the form fields
+          quickServerUrlInput.value = '';
+          setupCodeInput.value = '';
+          serverUrlInput.value = '';
+          emailInput.value = '';
+          passwordInput.value = '';
+          showStatus('Disconnected. Enter your setup code to connect.');
+        }
+      } catch (error) {
+        showStatus('Failed to disconnect: ' + error.message, true);
+      } finally {
+        useDifferentAccountBtn.classList.remove('loading');
+        useDifferentAccountBtn.disabled = false;
       }
     });
 
