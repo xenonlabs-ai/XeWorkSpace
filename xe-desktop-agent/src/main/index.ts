@@ -122,10 +122,8 @@ class DesktopAgent {
       try {
         if (accepted) {
           const success = await apiClient.submitConsent('1.0');
-          if (success) {
-            // Re-initialize to start monitoring after consent
-            setTimeout(() => this.reinitialize(), 1000);
-          }
+          // Don't reinitialize here - the consent-complete handler will close the window
+          // and resolve the promise, allowing the original initialize() to continue
           return { success };
         } else {
           // User declined - clear config and stop
@@ -142,6 +140,19 @@ class DesktopAgent {
       } catch (error: any) {
         return { status: 'ERROR', error: error.message };
       }
+    });
+
+    ipcMain.handle('consent-complete', (_event, accepted: boolean) => {
+      // Resolve the consent promise and close the window
+      if (this.consentResolve) {
+        this.consentResolve(accepted);
+        this.consentResolve = null;
+      }
+      if (this.consentWindow) {
+        this.consentWindow.close();
+        this.consentWindow = null;
+      }
+      return { success: true };
     });
 
     ipcMain.handle('get-device-info', () => {

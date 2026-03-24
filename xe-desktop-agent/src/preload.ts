@@ -13,6 +13,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Consent methods
   submitConsent: (accepted: boolean) => ipcRenderer.invoke('submit-consent', accepted),
   checkConsentStatus: () => ipcRenderer.invoke('check-consent-status'),
+  consentComplete: (accepted: boolean) => ipcRenderer.invoke('consent-complete', accepted),
   // Device info
   getDeviceInfo: () => ipcRenderer.invoke('get-device-info'),
 });
