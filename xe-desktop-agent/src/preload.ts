@@ -16,4 +16,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   consentComplete: (accepted: boolean) => ipcRenderer.invoke('consent-complete', accepted),
   // Device info
   getDeviceInfo: () => ipcRenderer.invoke('get-device-info'),
+  // Clear config (disconnect)
+  clearConfig: () => ipcRenderer.invoke('clear-config'),
 });

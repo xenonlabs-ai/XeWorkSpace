@@ -163,6 +163,20 @@ class DesktopAgent {
       };
     });
 
+    ipcMain.handle('clear-config', async () => {
+      try {
+        // Stop monitoring first
+        await this.stopMonitoring();
+        // Clear the config
+        configStore.clear();
+        // Reinitialize to show setup
+        await this.reinitialize();
+        return { success: true };
+      } catch (error: any) {
+        return { success: false, error: error.message };
+      }
+    });
+
     // Config handlers
     ipcMain.handle('get-config', () => {
       return configStore.getAll();

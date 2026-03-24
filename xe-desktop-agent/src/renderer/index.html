@@ -595,6 +595,9 @@
       <button class="button button-secondary" onclick="window.close()">
         Close Window
       </button>
+      <button class="button button-secondary" id="disconnectBtn" style="margin-top: 8px; color: #ef4444; border-color: #ef4444;">
+        Disconnect
+      </button>
       <p class="tray-hint">Agent continues running in system tray</p>
     </div>
   </div>
@@ -1136,8 +1139,29 @@
       }
     });
 
-    // Modify the quick setup to show consent dialog if needed
-    const originalQuickSetupHandler = quickSetupForm.onsubmit;
+    // Disconnect button handler
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    disconnectBtn.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to disconnect? You will need to re-enter your setup code.')) {
+        return;
+      }
+
+      disconnectBtn.classList.add('loading');
+      disconnectBtn.disabled = true;
+
+      try {
+        if (window.electronAPI && window.electronAPI.clearConfig) {
+          await window.electronAPI.clearConfig();
+          showSetupView();
+          showStatus('Disconnected. Enter your setup code to reconnect.');
+        }
+      } catch (error) {
+        showStatus('Failed to disconnect: ' + error.message, true);
+      } finally {
+        disconnectBtn.classList.remove('loading');
+        disconnectBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>
